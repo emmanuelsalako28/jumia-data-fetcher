@@ -11,9 +11,6 @@ export function generateBrief(product: ProductData): string {
     `URL: ${product.url}`,
     `Old Price: ${product.oldPrice}`,
     `New Price: ${product.newPrice}`,
-    `Logo: ${product.logo}`,
-    `Desktop: ${product.desktop}`,
-    `Mobile: ${product.mobile}`,
   ];
   return lines.join("\n");
 }
@@ -80,9 +77,6 @@ export async function fetchProductData(
         url: productData?.url || "",
         oldPrice: productData?.oldPrice || "",
         newPrice: productData?.newPrice || "",
-        logo: "",
-        desktop: "",
-        mobile: "",
       };
 
       results.push({
@@ -99,9 +93,6 @@ export async function fetchProductData(
         url: "",
         oldPrice: "",
         newPrice: "",
-        logo: "",
-        desktop: "",
-        mobile: "",
       };
       results.push({
         ...product,
@@ -126,9 +117,6 @@ export function createMockProducts(skus: string[]): ProductBrief[] {
         url: "",
         oldPrice: "",
         newPrice: "",
-        logo: "",
-        desktop: "",
-        mobile: "",
       };
       return {
         ...product,
