@@ -4,12 +4,18 @@ const BASE_URL = "https://www.jumia";
 
 export function generateBrief(product: ProductData): string {
   const lines = [
-    `**S/N #${product.sn}**`,
+    `"**S/N #*${product.sn}*`,
+    "",
     `SKU: ${product.sku}`,
+    "",
     `Name: ${product.name}`,
+    "",
     `Image: ${product.image}`,
+    "",
     `URL: ${product.url}`,
+    "",
     `Old Price: ${product.oldPrice}`,
+    "",
     `New Price: ${product.newPrice}`,
   ];
   return lines.join("\n");
