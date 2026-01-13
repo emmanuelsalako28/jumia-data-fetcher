@@ -64,9 +64,6 @@ const Index = () => {
             url: productData.url ? baseUrl + productData.url : "",
             oldPrice: productData.prices?.oldPrice || "",
             newPrice: productData.prices?.price || "",
-            logo: "",
-            desktop: "",
-            mobile: "",
           };
 
           results.push({
@@ -83,9 +80,6 @@ const Index = () => {
             url: "",
             oldPrice: "",
             newPrice: "",
-            logo: "",
-            desktop: "",
-            mobile: "",
           };
           results.push({
             ...product,
@@ -117,9 +111,6 @@ const Index = () => {
           url: "",
           oldPrice: "",
           newPrice: "",
-          logo: "",
-          desktop: "",
-          mobile: "",
         };
         return {
           ...product,

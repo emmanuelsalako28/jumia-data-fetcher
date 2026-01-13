@@ -52,9 +52,6 @@ export function ProductTable({ products, onSelectTable }: ProductTableProps) {
               <th className="data-cell text-left">URL</th>
               <th className="data-cell text-left">Old Price</th>
               <th className="data-cell text-left">New Price</th>
-              <th className="data-cell text-left">Logo</th>
-              <th className="data-cell text-left">Desktop</th>
-              <th className="data-cell text-left">Mobile</th>
               <th className="data-cell text-left min-w-[300px]">Brief</th>
             </tr>
           </thead>
@@ -98,15 +95,6 @@ export function ProductTable({ products, onSelectTable }: ProductTableProps) {
                   {product.oldPrice || "-"}
                 </td>
                 <td className="data-cell font-medium">{product.newPrice || "-"}</td>
-                <td className="data-cell text-muted-foreground">
-                  {product.logo || "-"}
-                </td>
-                <td className="data-cell text-muted-foreground">
-                  {product.desktop || "-"}
-                </td>
-                <td className="data-cell text-muted-foreground">
-                  {product.mobile || "-"}
-                </td>
                 <td className="data-cell">
                   <div className="flex items-start gap-2">
                     <pre className="brief-box flex-1 max-w-[280px] max-h-[120px] overflow-auto">

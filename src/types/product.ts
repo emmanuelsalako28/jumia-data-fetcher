@@ -12,9 +12,6 @@ export interface ProductData {
   url: string;
   oldPrice: string;
   newPrice: string;
-  logo: string;
-  desktop: string;
-  mobile: string;
 }
 
 export interface ProductBrief extends ProductData {
