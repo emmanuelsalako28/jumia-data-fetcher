@@ -196,7 +196,7 @@ const Index = () => {
 
         {/* Results Table */}
         <div className="bg-card rounded-lg shadow-sm border p-6">
-          <ProductTable products={products} onSelectTable={selectTable} />
+          <ProductTable products={products} />
         </div>
       </main>
 
