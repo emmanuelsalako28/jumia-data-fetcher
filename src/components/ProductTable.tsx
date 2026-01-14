@@ -6,11 +6,16 @@ import { toast } from "sonner";
 
 interface ProductTableProps {
   products: ProductBrief[];
-  onSelectTable: () => void;
 }
 
-export function ProductTable({ products, onSelectTable }: ProductTableProps) {
+export function ProductTable({ products }: ProductTableProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+  const selectAllBriefs = () => {
+    const allBriefs = products.map((p) => p.brief).join("\n\n");
+    navigator.clipboard.writeText(allBriefs);
+    toast.success("All briefs copied to clipboard!");
+  };
 
   const copyBrief = (brief: string, index: number) => {
     navigator.clipboard.writeText(brief);
@@ -35,9 +40,9 @@ export function ProductTable({ products, onSelectTable }: ProductTableProps) {
         <h2 className="text-lg font-semibold">
           Results ({products.length} product{products.length !== 1 ? "s" : ""})
         </h2>
-        <Button onClick={onSelectTable} variant="outline" size="sm">
+        <Button onClick={selectAllBriefs} variant="outline" size="sm">
           <Copy className="w-4 h-4 mr-2" />
-          Select Table
+          Select Briefs
         </Button>
       </div>
 
