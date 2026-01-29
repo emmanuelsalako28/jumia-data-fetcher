@@ -44,7 +44,13 @@ export function parseProductFromHtml(
       const limit = Math.min(parsed.products.length, 40);
       for (let i = 0; i < limit; i++) {
         const item = parsed.products[i];
-        const isOutOfStock = item.isSim ? false : (item.quantity === 0 || item.isOutOfStock === true || !item.displayName || !item.image);
+        const isOutOfStock = item.isSim ? false : (
+          item.quantity === 0 ||
+          item.isOutOfStock === true ||
+          !item.displayName ||
+          !item.image ||
+          !item.prices?.price
+        );
         products.push({
           sku: item.sku || "",
           name: item.displayName || "",
@@ -60,7 +66,13 @@ export function parseProductFromHtml(
     // Check if it's a direct product page
     else if (parsed.product) {
       const item = parsed.product;
-      const isOutOfStock = item.isSim ? false : (item.quantity === 0 || item.isOutOfStock === true || !item.displayName || !item.image);
+      const isOutOfStock = item.isSim ? false : (
+        item.quantity === 0 ||
+        item.isOutOfStock === true ||
+        !item.displayName ||
+        !item.image ||
+        !item.prices?.price
+      );
       products.push({
         sku: item.sku || "",
         name: item.displayName || "",
@@ -101,6 +113,7 @@ export async function fetchProductByUrl(
         oldPrice: productData.oldPrice || "",
         newPrice: productData.newPrice || "",
         outOfStock: productData.outOfStock || false,
+        category: productData.category || "",
       };
 
       return {
@@ -153,6 +166,8 @@ export async function fetchProductData(
         url: productData?.url || "",
         oldPrice: productData?.oldPrice || "",
         newPrice: productData?.newPrice || "",
+        outOfStock: productData?.outOfStock ?? true,
+        category: productData?.category || "",
       };
 
       return {
@@ -160,10 +175,11 @@ export async function fetchProductData(
         brief: generateBrief(product),
       };
     } catch (error) {
+      console.error(`Error fetching SKU ${sku}:`, error);
       const product: ProductData = {
         sn: i + 1,
         sku,
-        name: "",
+        name: "Fetch Failed",
         image: "",
         url: "",
         oldPrice: "",
@@ -189,45 +205,22 @@ export function createMockProducts(skus: string[]): ProductBrief[] {
       const product: ProductData = {
         sn: index + 1,
         sku: sku.trim(),
-        name: "",
-        image: "",
-        url: "",
-        oldPrice: "",
-        newPrice: "",
+        name: `Product ${sku.trim()}`,
+        image: "https://via.placeholder.com/150",
+        url: `https://www.jumia.com.ng/catalog/?q=${sku.trim()}`,
+        oldPrice: "₦ 10,000",
+        newPrice: "₦ 8,000",
+        rating: 4,
+        isOfficialStore: true,
+        isExpress: true,
+        discount: "-20%",
+        seller: "Jumia Store",
+        outOfStock: false,
+        category: "Electronics",
       };
       return {
         ...product,
         brief: generateBrief(product),
       };
     });
-}
-
-export function downloadCSV(products: ProductBrief[]) {
-  if (products.length === 0) return;
-
-  const headers = ["S/N", "SKU", "Name", "Image", "URL", "Old Price", "New Price"];
-
-  const csvRows = products.map((p) => {
-    return [
-      p.sn,
-      `"${p.sku}"`, // Force as string in excel
-      `"${(p.name || "").replace(/"/g, '""')}"`,
-      `"${(p.image || "").replace(/"/g, '""')}"`,
-      `"${(p.url || "").replace(/"/g, '""')}"`,
-      `"${(p.oldPrice || "").replace(/"/g, '""')}"`,
-      `"${(p.newPrice || "").replace(/"/g, '""')}"`,
-    ].join(",");
-  });
-
-  const csvContent = [headers.join(","), ...csvRows].join("\n");
-  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-  const url = URL.createObjectURL(blob);
-
-  const link = document.createElement("a");
-  link.setAttribute("href", url);
-  link.setAttribute("download", `jumia_products_${new Date().toISOString().split('T')[0]}.csv`);
-  link.style.visibility = "hidden";
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
 }
