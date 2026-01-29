@@ -51,6 +51,7 @@ export function parseProductFromHtml(
           url: item.url ? (item.url.startsWith('http') ? item.url : baseUrl + item.url) : "",
           oldPrice: item.prices?.oldPrice || "",
           newPrice: item.prices?.price || "",
+          outOfStock: item.isSim ? false : (item.quantity === 0 || item.isOutOfStock === true),
         });
       }
     }
@@ -64,6 +65,7 @@ export function parseProductFromHtml(
         url: item.url ? (item.url.startsWith('http') ? item.url : baseUrl + item.url) : "",
         oldPrice: item.prices?.oldPrice || "",
         newPrice: item.prices?.price || "",
+        outOfStock: item.isSim ? false : (item.quantity === 0 || item.isOutOfStock === true),
       });
     }
 

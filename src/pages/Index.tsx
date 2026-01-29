@@ -19,6 +19,7 @@ const Index = () => {
   const [products, setProducts] = useState<ProductBrief[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [filterOutOfStock, setFilterOutOfStock] = useState(false);
 
   const handleFetch = async () => {
     const skus = skuInput
@@ -121,6 +122,14 @@ const Index = () => {
         sn: idx + 1
       }));
     });
+
+    // Also remove from skuInput
+    setSkuInput((prev) => {
+      const lines = prev.split("\n");
+      const filteredLines = lines.filter(line => line.trim() !== sku);
+      return filteredLines.join("\n");
+    });
+
     toast.success("Product removed");
   };
 
@@ -283,47 +292,67 @@ const Index = () => {
               </div>
             ) : (
               <>
-                {/* Comma-separated format section */}
-                <div className="bg-white rounded border border-gray-200 shadow-sm p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-md font-medium text-gray-700">
-                      Comma-separated format
-                    </h3>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-8 px-3 border border-gray-100 bg-gray-50/50 hover:bg-gray-100"
-                      onClick={() => {
-                        const skuList = products
-                          .map(p => p.sku)
-                          .filter(sku => sku && sku !== "N/A")
-                          .join(",");
-                        navigator.clipboard.writeText(skuList);
-                        toast.success("Comma-separated SKUs copied!");
-                      }}
-                    >
-                      <Copy className="w-3.5 h-3.5 mr-2" />
-                      Copy
-                    </Button>
+                {/* Comma-separated format section & Filters */}
+                <div className="grid md:grid-cols-[1fr_auto] gap-4 items-start">
+                  <div className="bg-white rounded border border-gray-200 shadow-sm p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-md font-medium text-gray-700">
+                        Comma-separated format
+                      </h3>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-3 border border-gray-100 bg-gray-50/50 hover:bg-gray-100"
+                        onClick={() => {
+                          const skuList = products
+                            .map(p => p.sku)
+                            .filter(sku => sku && sku !== "N/A")
+                            .join(",");
+                          navigator.clipboard.writeText(skuList);
+                          toast.success("Comma-separated SKUs copied!");
+                        }}
+                      >
+                        <Copy className="w-3.5 h-3.5 mr-2" />
+                        Copy
+                      </Button>
+                    </div>
+                    <Textarea
+                      readOnly
+                      className="min-h-[80px] font-mono text-xs bg-gray-50/30 border-gray-100 focus-visible:ring-0 resize-none"
+                      value={products
+                        .map(p => p.sku)
+                        .filter(sku => sku && sku !== "N/A")
+                        .join(",")}
+                    />
                   </div>
-                  <Textarea
-                    readOnly
-                    className="min-h-[80px] font-mono text-xs bg-gray-50/30 border-gray-100 focus-visible:ring-0 resize-none"
-                    value={products
-                      .map(p => p.sku)
-                      .filter(sku => sku && sku !== "N/A")
-                      .join(",")}
-                  />
+
+                  <div className="bg-white rounded border border-gray-200 shadow-sm p-4 flex flex-col gap-4 min-w-[200px]">
+                    <h3 className="text-md font-medium text-gray-700">Filters</h3>
+                    <div className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id="out-of-stock-filter"
+                        className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
+                        checked={filterOutOfStock}
+                        onChange={(e) => setFilterOutOfStock(e.target.checked)}
+                      />
+                      <label htmlFor="out-of-stock-filter" className="text-sm font-medium text-gray-700 cursor-pointer">
+                        Out of stock only
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {products.map((product, index) => (
-                    <ProductCard
-                      key={`${product.sku}-${index}`}
-                      product={product}
-                      onDelete={() => handleDelete(product.sku)}
-                    />
-                  ))}
+                  {products
+                    .filter(p => !filterOutOfStock || p.outOfStock)
+                    .map((product, index) => (
+                      <ProductCard
+                        key={`${product.sku}-${index}`}
+                        product={product}
+                        onDelete={() => handleDelete(product.sku)}
+                      />
+                    ))}
                 </div>
               </>
             )}
@@ -338,7 +367,7 @@ const Index = () => {
           spreadsheets
         </div>
       </footer>
-    </div>
+    </div >
   );
 };
 

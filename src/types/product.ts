@@ -18,6 +18,7 @@ export interface ProductData {
   isExpress?: boolean;
   discount?: string;
   seller?: string;
+  outOfStock?: boolean;
 }
 
 export interface ProductBrief extends ProductData {

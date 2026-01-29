@@ -19,9 +19,14 @@ export function ProductCard({ product, onDelete }: ProductCardProps) {
         <Card className="overflow-hidden group hover:shadow-lg transition-shadow duration-300 relative bg-white">
             {/* Badges Overlay */}
             <div className="absolute top-2 left-2 z-10 flex flex-col gap-1">
-                {discount && (
+                {discount && !product.outOfStock && (
                     <Badge variant="destructive" className="bg-slate-800 hover:bg-slate-800 text-white text-xs px-1.5 rounded-sm">
                         {discount}
+                    </Badge>
+                )}
+                {product.outOfStock && (
+                    <Badge variant="destructive" className="bg-red-600 hover:bg-red-600 text-white text-xs px-1.5 rounded-sm uppercase font-bold">
+                        Out of Stock
                     </Badge>
                 )}
             </div>
