@@ -222,6 +222,11 @@ const Index = () => {
                 </Alert>
               )}
             </div>
+
+            {/* Results Table */}
+            <div className="bg-card rounded-lg shadow-sm border p-6">
+              <ProductTable products={products} />
+            </div>
           </TabsContent>
 
           <TabsContent value="view" className="space-y-8">
