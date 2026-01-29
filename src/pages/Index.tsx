@@ -37,9 +37,7 @@ const Index = () => {
     setHasError(false);
 
     try {
-      console.time("fetchProductData");
       const results = await fetchProductData(skus, country);
-      console.timeEnd("fetchProductData");
 
       setProducts(results);
 
@@ -73,11 +71,9 @@ const Index = () => {
     setHasError(false);
 
     try {
-      console.time("handleLinkFetch_parallel");
       const promises = urls.map(url => fetchProductByUrl(url, country));
       const resultsLists = await Promise.all(promises);
       const results = resultsLists.flat();
-      console.timeEnd("handleLinkFetch_parallel");
 
       if (results.length === 0) {
         toast.warning("No products found for the given link(s)");

@@ -38,12 +38,6 @@ export function parseProductFromHtml(
     const baseUrl = BASE_URL + domain;
     const products: Partial<ProductData>[] = [];
 
-    console.log('Parsed data structure:', {
-      hasProducts: !!parsed.products,
-      productsLength: parsed.products?.length,
-      hasProduct: !!parsed.product
-    });
-
     // Check if it's a catalog/search results page
     if (parsed.products && parsed.products.length > 0) {
       // Extract up to 40 products from the results
@@ -60,18 +54,22 @@ export function parseProductFromHtml(
         );
 
         // Calculate discount percentage if both prices exist
-        let discount = "";
-        try {
-          if (item.prices?.oldPrice && item.prices?.price) {
-            const oldPriceNum = parseFloat(item.prices.oldPrice.replace(/[^0-9.]/g, ''));
-            const newPriceNum = parseFloat(item.prices.price.replace(/[^0-9.]/g, ''));
-            if (oldPriceNum > newPriceNum && !isNaN(oldPriceNum) && !isNaN(newPriceNum)) {
+        let discount: string | undefined = undefined;
+
+        if (item.prices?.oldPrice && item.prices?.price) {
+          try {
+            const oldPriceStr = String(item.prices.oldPrice).replace(/[^0-9.]/g, '');
+            const newPriceStr = String(item.prices.price).replace(/[^0-9.]/g, '');
+            const oldPriceNum = parseFloat(oldPriceStr);
+            const newPriceNum = parseFloat(newPriceStr);
+
+            if (!isNaN(oldPriceNum) && !isNaN(newPriceNum) && oldPriceNum > newPriceNum) {
               const discountPercent = Math.round(((oldPriceNum - newPriceNum) / oldPriceNum) * 100);
               discount = `-${discountPercent}%`;
             }
+          } catch (e) {
+            console.warn('Error calculating discount:', e);
           }
-        } catch (e) {
-          console.warn('Error calculating discount:', e);
         }
         products.push({
           sku: item.sku || "",
@@ -80,7 +78,7 @@ export function parseProductFromHtml(
           url: item.url ? (item.url.startsWith('http') ? item.url : baseUrl + item.url) : "",
           oldPrice: item.prices?.oldPrice || "",
           newPrice: item.prices?.price || "",
-          discount: discount || undefined,
+          discount: discount,
           rating: item.rating?.average || undefined,
           reviews: item.rating?.totalRatings ? `(${item.rating.totalRatings})` : undefined,
           seller: item.seller || undefined,
@@ -104,20 +102,23 @@ export function parseProductFromHtml(
       );
 
       // Calculate discount percentage if both prices exist
-      let discount = "";
-      try {
-        if (item.prices?.oldPrice && item.prices?.price) {
-          const oldPriceNum = parseFloat(item.prices.oldPrice.replace(/[^0-9.]/g, ''));
-          const newPriceNum = parseFloat(item.prices.price.replace(/[^0-9.]/g, ''));
-          if (oldPriceNum > newPriceNum && !isNaN(oldPriceNum) && !isNaN(newPriceNum)) {
+      let discount: string | undefined = undefined;
+
+      if (item.prices?.oldPrice && item.prices?.price) {
+        try {
+          const oldPriceStr = String(item.prices.oldPrice).replace(/[^0-9.]/g, '');
+          const newPriceStr = String(item.prices.price).replace(/[^0-9.]/g, '');
+          const oldPriceNum = parseFloat(oldPriceStr);
+          const newPriceNum = parseFloat(newPriceStr);
+
+          if (!isNaN(oldPriceNum) && !isNaN(newPriceNum) && oldPriceNum > newPriceNum) {
             const discountPercent = Math.round(((oldPriceNum - newPriceNum) / oldPriceNum) * 100);
             discount = `-${discountPercent}%`;
           }
+        } catch (e) {
+          console.warn('Error calculating discount:', e);
         }
-      } catch (e) {
-        console.warn('Error calculating discount:', e);
       }
-
       products.push({
         sku: item.sku || "",
         name: item.displayName || "",
@@ -125,7 +126,7 @@ export function parseProductFromHtml(
         url: item.url ? (item.url.startsWith('http') ? item.url : baseUrl + item.url) : "",
         oldPrice: item.prices?.oldPrice || "",
         newPrice: item.prices?.price || "",
-        discount: discount || undefined,
+        discount: discount,
         rating: item.rating?.average || undefined,
         reviews: item.rating?.totalRatings ? `(${item.rating.totalRatings})` : undefined,
         seller: item.seller || undefined,
@@ -156,6 +157,7 @@ export async function fetchProductByUrl(
 
     return productDataList.map((productData, index) => {
       const product: ProductData = {
+        ...productData,
         sn: 0, // This will be set by the caller
         sku: productData.sku || "N/A",
         name: productData.name || "Unknown Product",
@@ -165,7 +167,7 @@ export async function fetchProductByUrl(
         newPrice: productData.newPrice || "",
         outOfStock: productData.outOfStock || false,
         category: productData.category || "",
-      };
+      } as ProductData;
 
       return {
         ...product,
@@ -210,6 +212,7 @@ export async function fetchProductData(
       const productData = productDataList.length > 0 ? productDataList[0] : null;
 
       const product: ProductData = {
+        ...productData,
         sn: i + 1,
         sku: productData?.sku || sku,
         name: productData?.name || "",
@@ -219,7 +222,7 @@ export async function fetchProductData(
         newPrice: productData?.newPrice || "",
         outOfStock: productData?.outOfStock ?? true,
         category: productData?.category || "",
-      };
+      } as ProductData;
 
       return {
         ...product,
