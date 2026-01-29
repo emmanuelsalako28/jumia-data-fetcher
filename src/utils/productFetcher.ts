@@ -49,7 +49,8 @@ export function parseProductFromHtml(
           item.isOutOfStock === true ||
           !item.displayName ||
           !item.image ||
-          !item.prices?.price
+          !item.prices?.price ||
+          !item.url
         );
         products.push({
           sku: item.sku || "",
@@ -71,7 +72,8 @@ export function parseProductFromHtml(
         item.isOutOfStock === true ||
         !item.displayName ||
         !item.image ||
-        !item.prices?.price
+        !item.prices?.price ||
+        !item.url
       );
       products.push({
         sku: item.sku || "",
