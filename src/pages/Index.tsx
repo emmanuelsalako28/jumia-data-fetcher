@@ -3,7 +3,7 @@ import { CountrySelector } from "@/components/CountrySelector";
 import { SkuInput } from "@/components/SkuInput";
 import { ProductTable } from "@/components/ProductTable";
 import { ProductBrief } from "@/types/product";
-import { generateBrief, downloadCSV, fetchProductByUrl } from "@/utils/productFetcher";
+import { generateBrief, downloadCSV, fetchProductByUrl, fetchProductData } from "@/utils/productFetcher";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, AlertCircle, FileSpreadsheet, Link as LinkIcon, Copy } from "lucide-react";
 import { toast } from "sonner";
@@ -34,73 +34,10 @@ const Index = () => {
     setIsLoading(true);
     setHasError(false);
 
-    const baseUrl = `https://www.jumia${country}`;
-    const catalogUrl = `${baseUrl}/catalog/?q=`;
-
-    const results: ProductBrief[] = [];
-
     try {
-      for (let i = 0; i < skus.length; i++) {
-        const sku = skus[i];
-        try {
-          const response = await fetch(catalogUrl + sku);
-          const html = await response.text();
-
-          // Parse the __STORE__ data
-          const startIdx = html.indexOf("window.__STORE__=") + 17;
-          const endIdx = html.indexOf("};</scr") + 1;
-
-          let productData: any = {};
-
-          if (startIdx > 16 && endIdx > 0) {
-            const objStr = html.substring(startIdx, endIdx);
-            const parsed = JSON.parse(objStr);
-            if (parsed.products && parsed.products.length > 0) {
-              productData = parsed.products[0];
-            }
-          }
-
-          const product = {
-            sn: i + 1,
-            sku: productData.sku || sku,
-            name: productData.displayName || "",
-            image: productData.image || "",
-            url: productData.url ? (productData.url.startsWith('http') ? productData.url : baseUrl + productData.url) : "",
-            oldPrice: productData.prices?.oldPrice || "",
-            newPrice: productData.prices?.price || "",
-            rating: productData.rating?.average || 4, // Mock if missing
-            isOfficialStore: productData.isOfficialStore,
-            isExpress: productData.isExpress,
-            discount: productData.prices?.discount,
-            seller: productData.sellerName,
-          };
-
-          results.push({
-            ...product,
-            brief: generateBrief(product),
-          });
-        } catch (error) {
-          console.error(`Error fetching SKU ${sku}:`, error);
-          const product = {
-            sn: i + 1,
-            sku,
-            name: "",
-            image: "",
-            url: "",
-            oldPrice: "",
-            newPrice: "",
-            rating: 0,
-            isOfficialStore: false,
-            isExpress: false,
-            discount: "",
-            seller: "",
-          };
-          results.push({
-            ...product,
-            brief: generateBrief(product),
-          });
-        }
-      }
+      console.time("fetchProductData");
+      const results = await fetchProductData(skus, country);
+      console.timeEnd("fetchProductData");
 
       setProducts(results);
 
@@ -113,30 +50,7 @@ const Index = () => {
     } catch (error) {
       console.error("Fetch error:", error);
       setHasError(true);
-      toast.error("Failed to fetch products. CORS may be blocking requests.");
-
-      // Still create entries for the SKUs
-      const fallbackResults = skus.map((sku, i) => {
-        const product = {
-          sn: i + 1,
-          sku,
-          name: "",
-          image: "",
-          url: "",
-          oldPrice: "",
-          newPrice: "",
-          rating: 0,
-          isOfficialStore: false,
-          isExpress: false,
-          discount: "",
-          seller: "",
-        };
-        return {
-          ...product,
-          brief: generateBrief(product),
-        };
-      });
-      setProducts(fallbackResults);
+      toast.error("Failed to fetch products.");
     } finally {
       setIsLoading(false);
     }
@@ -155,45 +69,25 @@ const Index = () => {
 
     setIsLoading(true);
     setHasError(false);
-    const results: ProductBrief[] = [];
 
     try {
-      for (let i = 0; i < urls.length; i++) {
-        const url = urls[i];
-        const resList = await fetchProductByUrl(url, country);
-        if (resList.length > 0) {
-          results.push(...resList);
-        } else {
-          // Fallback for failed fetch
-          const product = {
-            sn: 0,
-            sku: "N/A",
-            name: "Fetch Failed",
-            image: "",
-            url: url,
-            oldPrice: "",
-            newPrice: "",
-            rating: 0,
-            isOfficialStore: false,
-            isExpress: false,
-            discount: "",
-            seller: "",
-          };
-          results.push({
-            ...product,
-            brief: generateBrief(product)
-          });
-        }
+      console.time("handleLinkFetch_parallel");
+      const promises = urls.map(url => fetchProductByUrl(url, country));
+      const resultsLists = await Promise.all(promises);
+      const results = resultsLists.flat();
+      console.timeEnd("handleLinkFetch_parallel");
+
+      if (results.length === 0) {
+        toast.warning("No products found for the given link(s)");
+      } else {
+        // Re-assign SN sequentially for all results
+        const finalResults = results.map((r, idx) => ({
+          ...r,
+          sn: idx + 1
+        }));
+        setProducts(finalResults);
+        toast.success(`Fetched ${finalResults.length} product(s) by link`);
       }
-
-      // Re-assign SN sequentially for all results
-      const finalResults = results.map((r, idx) => ({
-        ...r,
-        sn: idx + 1
-      }));
-
-      setProducts(finalResults);
-      toast.success(`Fetched ${finalResults.length} product(s) by link`);
     } catch (error) {
       console.error("Link fetch error:", error);
       setHasError(true);

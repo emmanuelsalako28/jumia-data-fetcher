@@ -114,14 +114,13 @@ export async function fetchProductData(
   const baseUrl = BASE_URL + domain;
   const catalogUrl = baseUrl + "/catalog/?q=";
 
-  const results: ProductBrief[] = [];
-
-  for (let i = 0; i < skus.length; i++) {
-    const sku = skus[i].trim();
-    if (!sku) continue;
+  const promises = skus.map(async (rawSku, i) => {
+    const sku = rawSku.trim();
+    if (!sku) return null;
 
     try {
       const response = await fetch(catalogUrl + sku);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       const html = await response.text();
       const productDataList = parseProductFromHtml(html, domain);
       const productData = productDataList.length > 0 ? productDataList[0] : null;
@@ -136,10 +135,10 @@ export async function fetchProductData(
         newPrice: productData?.newPrice || "",
       };
 
-      results.push({
+      return {
         ...product,
         brief: generateBrief(product),
-      });
+      };
     } catch (error) {
       console.error(`Error fetching SKU ${sku}:`, error);
       const product: ProductData = {
@@ -151,14 +150,15 @@ export async function fetchProductData(
         oldPrice: "",
         newPrice: "",
       };
-      results.push({
+      return {
         ...product,
         brief: generateBrief(product),
-      });
+      };
     }
-  }
+  });
 
-  return results;
+  const rawResults = await Promise.all(promises);
+  return rawResults.filter((res): res is ProductBrief => res !== null);
 }
 
 // For demo purposes, create mock data since CORS will block direct fetching
