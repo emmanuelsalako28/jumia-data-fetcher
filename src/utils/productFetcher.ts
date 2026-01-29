@@ -53,6 +53,7 @@ export function parseProductFromHtml(
           oldPrice: item.prices?.oldPrice || "",
           newPrice: item.prices?.price || "",
           outOfStock: isOutOfStock,
+          category: item.categories?.[0]?.name || "",
         });
       }
     }
@@ -68,6 +69,7 @@ export function parseProductFromHtml(
         oldPrice: item.prices?.oldPrice || "",
         newPrice: item.prices?.price || "",
         outOfStock: isOutOfStock,
+        category: item.categories?.[0]?.name || "",
       });
     }
 

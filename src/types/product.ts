@@ -19,6 +19,7 @@ export interface ProductData {
   discount?: string;
   seller?: string;
   outOfStock?: boolean;
+  category?: string;
 }
 
 export interface ProductBrief extends ProductData {

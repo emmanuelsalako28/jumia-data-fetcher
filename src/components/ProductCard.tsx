@@ -59,7 +59,9 @@ export function ProductCard({ product, onDelete }: ProductCardProps) {
                 {/* Tags */}
                 <div className="flex gap-1 flex-wrap">
                     {isOfficial && <span className="text-[10px] bg-sky-700 text-white px-1 py-0.5 rounded-sm">Official Store</span>}
-                    <span className="text-[10px] bg-slate-800 text-white px-1 py-0.5 rounded-sm">Home & Office</span>
+                    {product.category && (
+                        <span className="text-[10px] bg-slate-800 text-white px-1 py-0.5 rounded-sm">{product.category}</span>
+                    )}
                 </div>
 
                 {/* Title */}
