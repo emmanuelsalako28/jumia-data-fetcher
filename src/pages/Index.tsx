@@ -3,9 +3,9 @@ import { CountrySelector } from "@/components/CountrySelector";
 import { SkuInput } from "@/components/SkuInput";
 import { ProductTable } from "@/components/ProductTable";
 import { ProductBrief } from "@/types/product";
-import { generateBrief } from "@/utils/productFetcher";
+import { generateBrief, downloadCSV } from "@/utils/productFetcher";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, AlertCircle } from "lucide-react";
+import { Download, Loader2, AlertCircle, FileSpreadsheet } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -207,6 +207,16 @@ const Index = () => {
                       Fetch Data
                     </>
                   )}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => downloadCSV(products)}
+                  disabled={products.length === 0}
+                  className="min-w-[140px]"
+                >
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Download CSV
                 </Button>
               </div>
 

@@ -130,3 +130,33 @@ export function createMockProducts(skus: string[]): ProductBrief[] {
       };
     });
 }
+
+export function downloadCSV(products: ProductBrief[]) {
+  if (products.length === 0) return;
+
+  const headers = ["S/N", "SKU", "Name", "Image", "URL", "Old Price", "New Price"];
+
+  const csvRows = products.map((p) => {
+    return [
+      p.sn,
+      `"${p.sku}"`, // Force as string in excel
+      `"${(p.name || "").replace(/"/g, '""')}"`,
+      `"${(p.image || "").replace(/"/g, '""')}"`,
+      `"${(p.url || "").replace(/"/g, '""')}"`,
+      `"${(p.oldPrice || "").replace(/"/g, '""')}"`,
+      `"${(p.newPrice || "").replace(/"/g, '""')}"`,
+    ].join(",");
+  });
+
+  const csvContent = [headers.join(","), ...csvRows].join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", `jumia_products_${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
