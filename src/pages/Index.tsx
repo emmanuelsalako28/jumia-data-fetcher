@@ -155,6 +155,11 @@ const Index = () => {
     toast.success("Table selected! Press Ctrl+C to copy");
   };
 
+  const handleDelete = (sku: string) => {
+    setProducts((prev) => prev.filter((p) => p.sku !== sku));
+    toast.success("Product removed");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -217,27 +222,30 @@ const Index = () => {
                 </Alert>
               )}
             </div>
-
-            {/* Results Table */}
-            <div className="bg-card rounded-lg shadow-sm border p-6">
-              <ProductTable products={products} />
-            </div>
           </TabsContent>
 
-          <TabsContent value="view">
+          <TabsContent value="view" className="space-y-8">
             {products.length === 0 ? (
               <div className="text-center py-20 text-slate-500 bg-card rounded-lg border">
                 No products to display. Go back to the Fetch tab and load some data.
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {products.map((product, index) => (
-                  <ProductCard
-                    key={`${product.sku}-${index}`}
-                    product={product}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {products.map((product, index) => (
+                    <ProductCard
+                      key={`${product.sku}-${index}`}
+                      product={product}
+                      onDelete={() => handleDelete(product.sku)}
+                    />
+                  ))}
+                </div>
+
+                {/* Results Table */}
+                <div className="bg-card rounded-lg shadow-sm border p-6">
+                  <ProductTable products={products} />
+                </div>
+              </>
             )}
           </TabsContent>
         </Tabs>
