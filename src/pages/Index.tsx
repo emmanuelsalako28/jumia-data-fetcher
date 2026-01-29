@@ -3,17 +3,19 @@ import { CountrySelector } from "@/components/CountrySelector";
 import { SkuInput } from "@/components/SkuInput";
 import { ProductTable } from "@/components/ProductTable";
 import { ProductBrief } from "@/types/product";
-import { generateBrief, downloadCSV } from "@/utils/productFetcher";
+import { generateBrief, downloadCSV, fetchProductByUrl } from "@/utils/productFetcher";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, AlertCircle, FileSpreadsheet } from "lucide-react";
+import { Download, Loader2, AlertCircle, FileSpreadsheet, Link as LinkIcon, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ProductCard } from "@/components/ProductCard";
+import { Textarea } from "@/components/ui/textarea";
 
 const Index = () => {
   const [country, setCountry] = useState(".com.ng");
   const [skuInput, setSkuInput] = useState("");
+  const [linkInput, setLinkInput] = useState("");
   const [products, setProducts] = useState<ProductBrief[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -63,7 +65,7 @@ const Index = () => {
             sku: productData.sku || sku,
             name: productData.displayName || "",
             image: productData.image || "",
-            url: productData.url ? baseUrl + productData.url : "",
+            url: productData.url ? (productData.url.startsWith('http') ? productData.url : baseUrl + productData.url) : "",
             oldPrice: productData.prices?.oldPrice || "",
             newPrice: productData.prices?.price || "",
             rating: productData.rating?.average || 4, // Mock if missing
@@ -140,6 +142,67 @@ const Index = () => {
     }
   };
 
+  const handleLinkFetch = async () => {
+    const urls = linkInput
+      .split("\n")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0 && s.startsWith("http"));
+
+    if (urls.length === 0) {
+      toast.error("Please enter at least one valid Jumia URL");
+      return;
+    }
+
+    setIsLoading(true);
+    setHasError(false);
+    const results: ProductBrief[] = [];
+
+    try {
+      for (let i = 0; i < urls.length; i++) {
+        const url = urls[i];
+        const resList = await fetchProductByUrl(url, country);
+        if (resList.length > 0) {
+          results.push(...resList);
+        } else {
+          // Fallback for failed fetch
+          const product = {
+            sn: 0,
+            sku: "N/A",
+            name: "Fetch Failed",
+            image: "",
+            url: url,
+            oldPrice: "",
+            newPrice: "",
+            rating: 0,
+            isOfficialStore: false,
+            isExpress: false,
+            discount: "",
+            seller: "",
+          };
+          results.push({
+            ...product,
+            brief: generateBrief(product)
+          });
+        }
+      }
+
+      // Re-assign SN sequentially for all results
+      const finalResults = results.map((r, idx) => ({
+        ...r,
+        sn: idx + 1
+      }));
+
+      setProducts(finalResults);
+      toast.success(`Fetched ${finalResults.length} product(s) by link`);
+    } catch (error) {
+      console.error("Link fetch error:", error);
+      setHasError(true);
+      toast.error("Failed to fetch products by link.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const selectTable = () => {
     const table = document.getElementById("product-table");
     if (!table) return;
@@ -160,6 +223,21 @@ const Index = () => {
     toast.success("Product removed");
   };
 
+  const copySkus = () => {
+    const skus = products
+      .map((p) => p.sku)
+      .filter((sku) => sku && sku !== "N/A")
+      .join("\n");
+
+    if (!skus) {
+      toast.error("No valid SKUs to copy");
+      return;
+    }
+
+    navigator.clipboard.writeText(skus);
+    toast.success("SKUs copied to clipboard!");
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -177,8 +255,9 @@ const Index = () => {
       {/* Main Content */}
       <main className="container max-w-7xl mx-auto py-8 px-4 space-y-8">
         <Tabs defaultValue="fetch" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-8">
-            <TabsTrigger value="fetch">Fetch Data</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="fetch">Fetch by SKU</TabsTrigger>
+            <TabsTrigger value="link">Fetch by Link</TabsTrigger>
             <TabsTrigger value="view">View Product</TabsTrigger>
           </TabsList>
 
@@ -231,6 +310,68 @@ const Index = () => {
                   </AlertDescription>
                 </Alert>
               )}
+            </div>
+
+            {/* Results Table */}
+            <div className="bg-card rounded-lg shadow-sm border p-6">
+              <ProductTable products={products} />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="link" className="space-y-8">
+            <div className="bg-card rounded-lg shadow-sm border p-6 space-y-6">
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <LinkIcon className="w-4 h-4" />
+                  Paste Jumia Product URLs (one per line)
+                </label>
+                <Textarea
+                  placeholder="https://www.jumia.com.ng/..."
+                  className="min-h-[150px] font-mono text-sm"
+                  value={linkInput}
+                  onChange={(e) => setLinkInput(e.target.value)}
+                />
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={handleLinkFetch}
+                  disabled={isLoading}
+                  className="min-w-[140px]"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Fetching...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4 mr-2" />
+                      Fetch by Link
+                    </>
+                  )}
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={() => downloadCSV(products)}
+                  disabled={products.length === 0}
+                  className="min-w-[140px]"
+                >
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Download CSV
+                </Button>
+
+                <Button
+                  variant="outline"
+                  onClick={copySkus}
+                  disabled={products.length === 0}
+                  className="min-w-[140px]"
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy SKUs
+                </Button>
+              </div>
             </div>
 
             {/* Results Table */}

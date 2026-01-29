@@ -24,36 +24,86 @@ export function generateBrief(product: ProductData): string {
 export function parseProductFromHtml(
   html: string,
   domain: string
-): Partial<ProductData> | null {
+): Partial<ProductData>[] {
   try {
     const startIdx = html.indexOf("window.__STORE__=") + 17;
     const endIdx = html.indexOf("};</scr") + 1;
 
     if (startIdx === 16 || endIdx === 0) {
-      return null;
+      return [];
     }
 
     const objStr = html.substring(startIdx, endIdx);
     const parsed = JSON.parse(objStr);
+    const baseUrl = BASE_URL + domain;
+    const products: Partial<ProductData>[] = [];
 
-    if (!parsed.products || parsed.products.length === 0) {
-      return null;
+    // Check if it's a catalog/search results page
+    if (parsed.products && parsed.products.length > 0) {
+      // Extract up to 40 products from the results
+      const limit = Math.min(parsed.products.length, 40);
+      for (let i = 0; i < limit; i++) {
+        const item = parsed.products[i];
+        products.push({
+          sku: item.sku || "",
+          name: item.displayName || "",
+          image: item.image || "",
+          url: item.url ? (item.url.startsWith('http') ? item.url : baseUrl + item.url) : "",
+          oldPrice: item.prices?.oldPrice || "",
+          newPrice: item.prices?.price || "",
+        });
+      }
+    }
+    // Check if it's a direct product page
+    else if (parsed.product) {
+      const item = parsed.product;
+      products.push({
+        sku: item.sku || "",
+        name: item.displayName || "",
+        image: item.image || "",
+        url: item.url ? (item.url.startsWith('http') ? item.url : baseUrl + item.url) : "",
+        oldPrice: item.prices?.oldPrice || "",
+        newPrice: item.prices?.price || "",
+      });
     }
 
-    const product = parsed.products[0];
-    const baseUrl = BASE_URL + domain;
-
-    return {
-      sku: product.sku || "",
-      name: product.displayName || "",
-      image: product.image || "",
-      url: product.url ? baseUrl + product.url : "",
-      oldPrice: product.prices?.oldPrice || "",
-      newPrice: product.prices?.price || "",
-    };
+    return products;
   } catch (error) {
     console.error("Error parsing product data:", error);
-    return null;
+    return [];
+  }
+}
+
+export async function fetchProductByUrl(
+  url: string,
+  domain: string
+): Promise<ProductBrief[]> {
+  try {
+    const response = await fetch(url);
+    const html = await response.text();
+    const productDataList = parseProductFromHtml(html, domain);
+
+    if (productDataList.length === 0) return [];
+
+    return productDataList.map((productData, index) => {
+      const product: ProductData = {
+        sn: 0, // This will be set by the caller
+        sku: productData.sku || "N/A",
+        name: productData.name || "Unknown Product",
+        image: productData.image || "",
+        url: productData.url || url,
+        oldPrice: productData.oldPrice || "",
+        newPrice: productData.newPrice || "",
+      };
+
+      return {
+        ...product,
+        brief: generateBrief(product)
+      };
+    });
+  } catch (error) {
+    console.error(`Error fetching URL ${url}:`, error);
+    return [];
   }
 }
 
@@ -73,7 +123,8 @@ export async function fetchProductData(
     try {
       const response = await fetch(catalogUrl + sku);
       const html = await response.text();
-      const productData = parseProductFromHtml(html, domain);
+      const productDataList = parseProductFromHtml(html, domain);
+      const productData = productDataList.length > 0 ? productDataList[0] : null;
 
       const product: ProductData = {
         sn: i + 1,
