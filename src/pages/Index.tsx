@@ -5,13 +5,13 @@ import { ProductTable } from "@/components/ProductTable";
 import { ProductBrief } from "@/types/product";
 import { generateBrief } from "@/utils/productFetcher";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, AlertCircle, FileText } from "lucide-react";
+import { Download, Loader2, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { useNavigate } from "react-router-dom";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ProductCard } from "@/components/ProductCard";
 
 const Index = () => {
-  const navigate = useNavigate();
   const [country, setCountry] = useState(".com.ng");
   const [skuInput, setSkuInput] = useState("");
   const [products, setProducts] = useState<ProductBrief[]>([]);
@@ -66,6 +66,11 @@ const Index = () => {
             url: productData.url ? baseUrl + productData.url : "",
             oldPrice: productData.prices?.oldPrice || "",
             newPrice: productData.prices?.price || "",
+            rating: productData.rating?.average || 4, // Mock if missing
+            isOfficialStore: productData.isOfficialStore,
+            isExpress: productData.isExpress,
+            discount: productData.prices?.discount,
+            seller: productData.sellerName,
           };
 
           results.push({
@@ -82,6 +87,11 @@ const Index = () => {
             url: "",
             oldPrice: "",
             newPrice: "",
+            rating: 0,
+            isOfficialStore: false,
+            isExpress: false,
+            discount: "",
+            seller: "",
           };
           results.push({
             ...product,
@@ -92,7 +102,7 @@ const Index = () => {
 
       setProducts(results);
 
-      if (results.some(p => p.name)) {
+      if (results.some((p) => p.name)) {
         toast.success(`Fetched ${results.length} product(s)`);
       } else {
         setHasError(true);
@@ -113,6 +123,11 @@ const Index = () => {
           url: "",
           oldPrice: "",
           newPrice: "",
+          rating: 0,
+          isOfficialStore: false,
+          isExpress: false,
+          discount: "",
+          seller: "",
         };
         return {
           ...product,
@@ -156,60 +171,76 @@ const Index = () => {
 
       {/* Main Content */}
       <main className="container max-w-7xl mx-auto py-8 px-4 space-y-8">
-        {/* Controls Card */}
-        <div className="bg-card rounded-lg shadow-sm border p-6 space-y-6">
-          <div className="grid md:grid-cols-[auto_1fr] gap-6">
-            <CountrySelector value={country} onChange={setCountry} />
-            <SkuInput value={skuInput} onChange={setSkuInput} />
-          </div>
+        <Tabs defaultValue="fetch" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-8">
+            <TabsTrigger value="fetch">Fetch Data</TabsTrigger>
+            <TabsTrigger value="view">View Product</TabsTrigger>
+          </TabsList>
 
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={handleFetch}
-              disabled={isLoading}
-              className="min-w-[140px]"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Fetching...
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4 mr-2" />
-                  Fetch Data
-                </>
+          <TabsContent value="fetch" className="space-y-8">
+            {/* Controls Card */}
+            <div className="bg-card rounded-lg shadow-sm border p-6 space-y-6">
+              <div className="grid md:grid-cols-[auto_1fr] gap-6">
+                <CountrySelector value={country} onChange={setCountry} />
+                <SkuInput value={skuInput} onChange={setSkuInput} />
+              </div>
+
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={handleFetch}
+                  disabled={isLoading}
+                  className="min-w-[140px]"
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Fetching...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="w-4 h-4 mr-2" />
+                      Fetch Data
+                    </>
+                  )}
+                </Button>
+              </div>
+
+              {hasError && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>CORS Limitation</AlertTitle>
+                  <AlertDescription>
+                    Direct browser requests to Jumia are blocked by CORS. For
+                    full functionality, you'll need a backend proxy server. The
+                    SKUs have been loaded but product data couldn't be fetched.
+                  </AlertDescription>
+                </Alert>
               )}
-            </Button>
+            </div>
 
-            <Button
-              variant="outline"
-              onClick={() => navigate("/view-product", { state: { products } })}
-              disabled={products.length === 0}
-              className="min-w-[140px]"
-            >
-              <FileText className="w-4 h-4 mr-2" />
-              View Product
-            </Button>
-          </div>
+            {/* Results Table */}
+            <div className="bg-card rounded-lg shadow-sm border p-6">
+              <ProductTable products={products} />
+            </div>
+          </TabsContent>
 
-          {hasError && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>CORS Limitation</AlertTitle>
-              <AlertDescription>
-                Direct browser requests to Jumia are blocked by CORS. For full
-                functionality, you'll need a backend proxy server. The SKUs have
-                been loaded but product data couldn't be fetched.
-              </AlertDescription>
-            </Alert>
-          )}
-        </div>
-
-        {/* Results Table */}
-        <div className="bg-card rounded-lg shadow-sm border p-6">
-          <ProductTable products={products} />
-        </div>
+          <TabsContent value="view">
+            {products.length === 0 ? (
+              <div className="text-center py-20 text-slate-500 bg-card rounded-lg border">
+                No products to display. Go back to the Fetch tab and load some data.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {products.map((product, index) => (
+                  <ProductCard
+                    key={`${product.sku}-${index}`}
+                    product={product}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Footer */}
