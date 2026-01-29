@@ -64,10 +64,17 @@ export function ProductCard({ product, onDelete }: ProductCardProps) {
 
                 {/* Price */}
                 <div className="space-y-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold text-lg text-slate-900">{product.newPrice}</span>
                         {product.oldPrice && (
-                            <span className="text-xs text-slate-400 line-through">{product.oldPrice}</span>
+                            <>
+                                <span className="text-xs text-slate-400 line-through">{product.oldPrice}</span>
+                                {product.discount && (
+                                    <span className="text-xs font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">
+                                        {product.discount}
+                                    </span>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
