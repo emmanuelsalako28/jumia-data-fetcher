@@ -226,3 +226,55 @@ export function createMockProducts(skus: string[]): ProductBrief[] {
       };
     });
 }
+
+export function downloadCSV(products: ProductData[]): void {
+  if (products.length === 0) {
+    console.warn("No products to download");
+    return;
+  }
+
+  // CSV Headers
+  const headers = [
+    "S/N",
+    "SKU",
+    "Name",
+    "Image",
+    "URL",
+    "Old Price",
+    "New Price",
+    "Category",
+    "Out of Stock"
+  ];
+
+  // Convert products to CSV rows
+  const rows = products.map(p => [
+    p.sn,
+    p.sku,
+    `"${(p.name || "").replace(/"/g, '""')}"`, // Escape quotes in name
+    p.image,
+    p.url,
+    p.oldPrice,
+    p.newPrice,
+    p.category || "",
+    p.outOfStock ? "Yes" : "No"
+  ]);
+
+  // Combine headers and rows
+  const csvContent = [
+    headers.join(","),
+    ...rows.map(row => row.join(","))
+  ].join("\n");
+
+  // Create blob and download
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+
+  link.setAttribute("href", url);
+  link.setAttribute("download", `jumia_products_${new Date().toISOString().split('T')[0]}.csv`);
+  link.style.visibility = "hidden";
+
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
