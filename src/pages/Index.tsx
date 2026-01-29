@@ -5,11 +5,13 @@ import { ProductTable } from "@/components/ProductTable";
 import { ProductBrief } from "@/types/product";
 import { generateBrief } from "@/utils/productFetcher";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, AlertCircle } from "lucide-react";
+import { Download, Loader2, AlertCircle, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
+  const navigate = useNavigate();
   const [country, setCountry] = useState(".com.ng");
   const [skuInput, setSkuInput] = useState("");
   const [products, setProducts] = useState<ProductBrief[]>([]);
@@ -89,7 +91,7 @@ const Index = () => {
       }
 
       setProducts(results);
-      
+
       if (results.some(p => p.name)) {
         toast.success(`Fetched ${results.length} product(s)`);
       } else {
@@ -100,7 +102,7 @@ const Index = () => {
       console.error("Fetch error:", error);
       setHasError(true);
       toast.error("Failed to fetch products. CORS may be blocking requests.");
-      
+
       // Still create entries for the SKUs
       const fallbackResults = skus.map((sku, i) => {
         const product = {
@@ -178,6 +180,16 @@ const Index = () => {
                   Fetch Data
                 </>
               )}
+            </Button>
+
+            <Button
+              variant="outline"
+              onClick={() => navigate("/view-product", { state: { products } })}
+              disabled={products.length === 0}
+              className="min-w-[140px]"
+            >
+              <FileText className="w-4 h-4 mr-2" />
+              View Product
             </Button>
           </div>
 

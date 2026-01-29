@@ -12,6 +12,12 @@ export interface ProductData {
   url: string;
   oldPrice: string;
   newPrice: string;
+  rating?: number;
+  reviews?: string;
+  isOfficialStore?: boolean;
+  isExpress?: boolean;
+  discount?: string;
+  seller?: string;
 }
 
 export interface ProductBrief extends ProductData {
