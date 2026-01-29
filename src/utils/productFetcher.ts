@@ -38,6 +38,12 @@ export function parseProductFromHtml(
     const baseUrl = BASE_URL + domain;
     const products: Partial<ProductData>[] = [];
 
+    console.log('Parsed data structure:', {
+      hasProducts: !!parsed.products,
+      productsLength: parsed.products?.length,
+      hasProduct: !!parsed.product
+    });
+
     // Check if it's a catalog/search results page
     if (parsed.products && parsed.products.length > 0) {
       // Extract up to 40 products from the results
@@ -52,6 +58,21 @@ export function parseProductFromHtml(
           !item.prices?.price ||
           !item.url
         );
+
+        // Calculate discount percentage if both prices exist
+        let discount = "";
+        try {
+          if (item.prices?.oldPrice && item.prices?.price) {
+            const oldPriceNum = parseFloat(item.prices.oldPrice.replace(/[^0-9.]/g, ''));
+            const newPriceNum = parseFloat(item.prices.price.replace(/[^0-9.]/g, ''));
+            if (oldPriceNum > newPriceNum && !isNaN(oldPriceNum) && !isNaN(newPriceNum)) {
+              const discountPercent = Math.round(((oldPriceNum - newPriceNum) / oldPriceNum) * 100);
+              discount = `-${discountPercent}%`;
+            }
+          }
+        } catch (e) {
+          console.warn('Error calculating discount:', e);
+        }
         products.push({
           sku: item.sku || "",
           name: item.displayName || "",
@@ -59,6 +80,12 @@ export function parseProductFromHtml(
           url: item.url ? (item.url.startsWith('http') ? item.url : baseUrl + item.url) : "",
           oldPrice: item.prices?.oldPrice || "",
           newPrice: item.prices?.price || "",
+          discount: discount || undefined,
+          rating: item.rating?.average || undefined,
+          reviews: item.rating?.totalRatings ? `(${item.rating.totalRatings})` : undefined,
+          seller: item.seller || undefined,
+          isOfficialStore: Array.isArray(item.badges) ? item.badges.some((b: any) => b.text?.toLowerCase().includes('official')) : undefined,
+          isExpress: Array.isArray(item.badges) ? item.badges.some((b: any) => b.text?.toLowerCase().includes('express')) : undefined,
           outOfStock: isOutOfStock,
           category: item.categories?.[0]?.name || "",
         });
@@ -75,6 +102,22 @@ export function parseProductFromHtml(
         !item.prices?.price ||
         !item.url
       );
+
+      // Calculate discount percentage if both prices exist
+      let discount = "";
+      try {
+        if (item.prices?.oldPrice && item.prices?.price) {
+          const oldPriceNum = parseFloat(item.prices.oldPrice.replace(/[^0-9.]/g, ''));
+          const newPriceNum = parseFloat(item.prices.price.replace(/[^0-9.]/g, ''));
+          if (oldPriceNum > newPriceNum && !isNaN(oldPriceNum) && !isNaN(newPriceNum)) {
+            const discountPercent = Math.round(((oldPriceNum - newPriceNum) / oldPriceNum) * 100);
+            discount = `-${discountPercent}%`;
+          }
+        }
+      } catch (e) {
+        console.warn('Error calculating discount:', e);
+      }
+
       products.push({
         sku: item.sku || "",
         name: item.displayName || "",
@@ -82,6 +125,12 @@ export function parseProductFromHtml(
         url: item.url ? (item.url.startsWith('http') ? item.url : baseUrl + item.url) : "",
         oldPrice: item.prices?.oldPrice || "",
         newPrice: item.prices?.price || "",
+        discount: discount || undefined,
+        rating: item.rating?.average || undefined,
+        reviews: item.rating?.totalRatings ? `(${item.rating.totalRatings})` : undefined,
+        seller: item.seller || undefined,
+        isOfficialStore: Array.isArray(item.badges) ? item.badges.some((b: any) => b.text?.toLowerCase().includes('official')) : undefined,
+        isExpress: Array.isArray(item.badges) ? item.badges.some((b: any) => b.text?.toLowerCase().includes('express')) : undefined,
         outOfStock: isOutOfStock,
         category: item.categories?.[0]?.name || "",
       });
