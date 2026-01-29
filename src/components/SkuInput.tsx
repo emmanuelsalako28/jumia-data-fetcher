@@ -10,8 +10,9 @@ interface SkuInputProps {
 }
 
 export function SkuInput({ value, onChange }: SkuInputProps) {
-  const [copied, setCopied] = useState(false);
-  
+  const [copiedNewlines, setCopiedNewlines] = useState(false);
+  const [copiedComma, setCopiedComma] = useState(false);
+
   const skuCount = value
     .split("\n")
     .filter((sku) => sku.trim().length > 0).length;
@@ -32,15 +33,26 @@ export function SkuInput({ value, onChange }: SkuInputProps) {
     onChange(newlineValue);
   };
 
+  const copyNewlines = () => {
+    if (!value.trim()) {
+      toast.error("No SKUs to copy");
+      return;
+    }
+    navigator.clipboard.writeText(value);
+    setCopiedNewlines(true);
+    toast.success("SKUs copied!");
+    setTimeout(() => setCopiedNewlines(false), 2000);
+  };
+
   const copyCommaSeparated = () => {
     if (!commaSeparated) {
       toast.error("No SKUs to copy");
       return;
     }
     navigator.clipboard.writeText(commaSeparated);
-    setCopied(true);
+    setCopiedComma(true);
     toast.success("SKUs copied in comma format!");
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopiedComma(false), 2000);
   };
 
   return (
@@ -48,13 +60,29 @@ export function SkuInput({ value, onChange }: SkuInputProps) {
       {/* Newline input */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between">
-          <label className="text-sm font-medium text-foreground flex items-center gap-2">
-            <Package className="w-4 h-4" />
-            Enter SKUs (one per line)
-          </label>
-          <span className="text-xs text-muted-foreground">
-            {skuCount} SKU{skuCount !== 1 ? "s" : ""}
-          </span>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-foreground flex items-center gap-2">
+              <Package className="w-4 h-4" />
+              Enter SKUs (one per line)
+            </label>
+            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+              {skuCount}
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs gap-1.5 hover:bg-muted"
+            onClick={copyNewlines}
+            disabled={skuCount === 0}
+          >
+            {copiedNewlines ? (
+              <Check className="w-3.5 h-3.5 text-green-500" />
+            ) : (
+              <Copy className="w-3.5 h-3.5" />
+            )}
+            Copy
+          </Button>
         </div>
         <Textarea
           value={value}
@@ -76,7 +104,7 @@ export function SkuInput({ value, onChange }: SkuInputProps) {
             onClick={copyCommaSeparated}
             disabled={!commaSeparated}
           >
-            {copied ? (
+            {copiedComma ? (
               <Check className="w-4 h-4 mr-1 text-green-500" />
             ) : (
               <Copy className="w-4 h-4 mr-1" />
