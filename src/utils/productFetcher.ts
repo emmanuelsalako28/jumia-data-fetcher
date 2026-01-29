@@ -44,6 +44,7 @@ export function parseProductFromHtml(
       const limit = Math.min(parsed.products.length, 40);
       for (let i = 0; i < limit; i++) {
         const item = parsed.products[i];
+        const isOutOfStock = item.isSim ? false : (item.quantity === 0 || item.isOutOfStock === true || !item.displayName || !item.image);
         products.push({
           sku: item.sku || "",
           name: item.displayName || "",
@@ -51,13 +52,14 @@ export function parseProductFromHtml(
           url: item.url ? (item.url.startsWith('http') ? item.url : baseUrl + item.url) : "",
           oldPrice: item.prices?.oldPrice || "",
           newPrice: item.prices?.price || "",
-          outOfStock: item.isSim ? false : (item.quantity === 0 || item.isOutOfStock === true),
+          outOfStock: isOutOfStock,
         });
       }
     }
     // Check if it's a direct product page
     else if (parsed.product) {
       const item = parsed.product;
+      const isOutOfStock = item.isSim ? false : (item.quantity === 0 || item.isOutOfStock === true || !item.displayName || !item.image);
       products.push({
         sku: item.sku || "",
         name: item.displayName || "",
@@ -65,7 +67,7 @@ export function parseProductFromHtml(
         url: item.url ? (item.url.startsWith('http') ? item.url : baseUrl + item.url) : "",
         oldPrice: item.prices?.oldPrice || "",
         newPrice: item.prices?.price || "",
-        outOfStock: item.isSim ? false : (item.quantity === 0 || item.isOutOfStock === true),
+        outOfStock: isOutOfStock,
       });
     }
 
@@ -96,6 +98,7 @@ export async function fetchProductByUrl(
         url: productData.url || url,
         oldPrice: productData.oldPrice || "",
         newPrice: productData.newPrice || "",
+        outOfStock: productData.outOfStock || false,
       };
 
       return {
@@ -105,7 +108,20 @@ export async function fetchProductByUrl(
     });
   } catch (error) {
     console.error(`Error fetching URL ${url}:`, error);
-    return [];
+    const product: ProductData = {
+      sn: 0,
+      sku: "N/A",
+      name: "Fetch Failed",
+      image: "",
+      url: url,
+      oldPrice: "",
+      newPrice: "",
+      outOfStock: true,
+    };
+    return [{
+      ...product,
+      brief: generateBrief(product)
+    }];
   }
 }
 
@@ -142,7 +158,6 @@ export async function fetchProductData(
         brief: generateBrief(product),
       };
     } catch (error) {
-      console.error(`Error fetching SKU ${sku}:`, error);
       const product: ProductData = {
         sn: i + 1,
         sku,
@@ -151,6 +166,7 @@ export async function fetchProductData(
         url: "",
         oldPrice: "",
         newPrice: "",
+        outOfStock: true,
       };
       return {
         ...product,
