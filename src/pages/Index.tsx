@@ -5,7 +5,7 @@ import { ProductTable } from "@/components/ProductTable";
 import { ProductBrief } from "@/types/product";
 import { generateBrief, downloadCSV, fetchProductByUrl, fetchProductData } from "@/utils/productFetcher";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, AlertCircle, FileSpreadsheet, Link as LinkIcon, Copy } from "lucide-react";
+import { Download, Loader2, AlertCircle, FileSpreadsheet, Link as LinkIcon, Copy, Shuffle } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -143,6 +143,25 @@ const Index = () => {
 
     navigator.clipboard.writeText(skus);
     toast.success("SKUs copied to clipboard!");
+  };
+
+  const handleShuffle = () => {
+    if (products.length <= 1) return;
+
+    const shuffled = [...products];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+
+    // Re-sequence SN after shuffle
+    const reSequenced = shuffled.map((p, idx) => ({
+      ...p,
+      sn: idx + 1
+    }));
+
+    setProducts(reSequenced);
+    toast.success("Products shuffled!");
   };
 
   return (
@@ -296,22 +315,33 @@ const Index = () => {
                       <h3 className="text-md font-medium text-gray-700">
                         Comma-separated format
                       </h3>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-3 border border-gray-100 bg-gray-50/50 hover:bg-gray-100"
-                        onClick={() => {
-                          const skuList = products
-                            .map(p => p.sku)
-                            .filter(sku => sku && sku !== "N/A")
-                            .join(",");
-                          navigator.clipboard.writeText(skuList);
-                          toast.success("Comma-separated SKUs copied!");
-                        }}
-                      >
-                        <Copy className="w-3.5 h-3.5 mr-2" />
-                        Copy
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-3 border border-gray-100 bg-gray-50/50 hover:bg-gray-100"
+                          onClick={handleShuffle}
+                        >
+                          <Shuffle className="w-3.5 h-3.5 mr-2" />
+                          Shuffle
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-3 border border-gray-100 bg-gray-50/50 hover:bg-gray-100"
+                          onClick={() => {
+                            const skuList = products
+                              .map(p => p.sku)
+                              .filter(sku => sku && sku !== "N/A")
+                              .join(",");
+                            navigator.clipboard.writeText(skuList);
+                            toast.success("Comma-separated SKUs copied!");
+                          }}
+                        >
+                          <Copy className="w-3.5 h-3.5 mr-2" />
+                          Copy
+                        </Button>
+                      </div>
                     </div>
                     <Textarea
                       readOnly
