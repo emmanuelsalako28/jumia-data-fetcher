@@ -84,6 +84,16 @@ const Index = () => {
           sn: idx + 1
         }));
         setProducts(finalResults);
+
+        // Sync SKUs to input fields
+        const fetchedSkus = finalResults
+          .map(r => r.sku)
+          .filter(sku => sku && sku !== "N/A");
+
+        if (fetchedSkus.length > 0) {
+          setSkuInput(fetchedSkus.join("\n"));
+        }
+
         toast.success(`Fetched ${finalResults.length} product(s) by link`);
       }
     } catch (error) {
@@ -181,10 +191,9 @@ const Index = () => {
       {/* Main Content */}
       <main className="container max-w-7xl mx-auto py-8 px-4 space-y-8">
         <Tabs defaultValue="fetch" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
-            <TabsTrigger value="fetch">Fetch by SKU</TabsTrigger>
-            <TabsTrigger value="link">Fetch by Link</TabsTrigger>
-            <TabsTrigger value="view">View Product</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 mb-8">
+            <TabsTrigger value="fetch">Fetch Products</TabsTrigger>
+            <TabsTrigger value="view">View Products</TabsTrigger>
           </TabsList>
 
           <TabsContent value="fetch" className="space-y-8">
@@ -192,7 +201,14 @@ const Index = () => {
             <div className="bg-card rounded-lg shadow-sm border p-6 space-y-6">
               <div className="grid md:grid-cols-[auto_1fr] gap-6">
                 <CountrySelector value={country} onChange={setCountry} />
-                <SkuInput value={skuInput} onChange={setSkuInput} />
+                <SkuInput
+                  value={skuInput}
+                  onChange={setSkuInput}
+                  linkValue={linkInput}
+                  onLinkChange={setLinkInput}
+                  onLinkFetch={handleLinkFetch}
+                  isLoading={isLoading}
+                />
               </div>
 
               <div className="flex flex-wrap gap-3">
@@ -244,62 +260,6 @@ const Index = () => {
             </div>
           </TabsContent>
 
-          <TabsContent value="link" className="space-y-8">
-            <div className="bg-card rounded-lg shadow-sm border p-6 space-y-6">
-              <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-2">
-                  <LinkIcon className="w-4 h-4" />
-                  Paste Jumia Product URLs (one per line)
-                </label>
-                <Textarea
-                  placeholder="https://www.jumia.com.ng/..."
-                  className="min-h-[150px] font-mono text-sm"
-                  value={linkInput}
-                  onChange={(e) => setLinkInput(e.target.value)}
-                />
-              </div>
-
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  onClick={handleLinkFetch}
-                  disabled={isLoading}
-                  className="min-w-[140px]"
-                >
-                  {isLoading ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Fetching...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4 mr-2" />
-                      Fetch by Link
-                    </>
-                  )}
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={() => downloadCSV(products)}
-                  disabled={products.length === 0}
-                  className="min-w-[140px]"
-                >
-                  <FileSpreadsheet className="w-4 h-4 mr-2" />
-                  Download CSV
-                </Button>
-
-                <Button
-                  variant="outline"
-                  onClick={copySkus}
-                  disabled={products.length === 0}
-                  className="min-w-[140px]"
-                >
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copy SKUs
-                </Button>
-              </div>
-            </div>
-          </TabsContent>
 
           <TabsContent value="view" className="space-y-8">
             {products.length === 0 ? (
