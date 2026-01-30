@@ -187,8 +187,8 @@ const Index = () => {
         if (ratingFilter === "none") {
           if (p.rating !== undefined && p.rating !== null) return false;
         } else {
-          const minRating = parseFloat(ratingFilter);
-          if (p.rating === undefined || p.rating === null || p.rating < minRating) return false;
+          const targetRating = parseFloat(ratingFilter);
+          if (p.rating === undefined || p.rating === null || Math.floor(p.rating) !== targetRating) return false;
         }
       }
 
@@ -304,62 +304,64 @@ const Index = () => {
               </div>
             ) : (
               <>
-                {/* Comma-separated format section & Filters */}
-                <div className="grid md:grid-cols-[1fr_auto] gap-4 items-start">
-                  <div className="bg-white rounded border border-gray-200 shadow-sm p-4 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-md font-medium text-gray-700">
-                        Comma-separated format
-                      </h3>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-3 border border-gray-100 bg-gray-50/50 hover:bg-gray-100"
-                          onClick={handleShuffle}
-                        >
-                          <Shuffle className="w-3.5 h-3.5 mr-2" />
-                          Shuffle
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 px-3 border border-gray-100 bg-gray-50/50 hover:bg-gray-100"
-                          onClick={() => {
-                            const skuList = filteredProducts
-                              .map(p => p.sku)
-                              .filter(sku => sku && sku !== "N/A")
-                              .join(",");
-                            navigator.clipboard.writeText(skuList);
-                            toast.success("Comma-separated SKUs copied!");
-                          }}
-                        >
-                          <Copy className="w-3.5 h-3.5 mr-2" />
-                          Copy
-                        </Button>
-                      </div>
+                {/* Comma-separated format section at top */}
+                <div className="bg-white rounded border border-gray-200 shadow-sm p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-md font-medium text-gray-700">
+                      Comma-separated format
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-3 border border-gray-100 bg-gray-50/50 hover:bg-gray-100"
+                        onClick={handleShuffle}
+                      >
+                        <Shuffle className="w-3.5 h-3.5 mr-2" />
+                        Shuffle
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 px-3 border border-gray-100 bg-gray-50/50 hover:bg-gray-100"
+                        onClick={() => {
+                          const skuList = filteredProducts
+                            .map(p => p.sku)
+                            .filter(sku => sku && sku !== "N/A")
+                            .join(",");
+                          navigator.clipboard.writeText(skuList);
+                          toast.success("Comma-separated SKUs copied!");
+                        }}
+                      >
+                        <Copy className="w-3.5 h-3.5 mr-2" />
+                        Copy
+                      </Button>
                     </div>
-                    <Textarea
-                      readOnly
-                      className="min-h-[80px] font-mono text-xs bg-gray-50/30 border-gray-100 focus-visible:ring-0 resize-none"
-                      value={filteredProducts
-                        .map(p => p.sku)
-                        .filter(sku => sku && sku !== "N/A")
-                        .join(",")}
-                    />
                   </div>
+                  <Textarea
+                    readOnly
+                    className="min-h-[80px] font-mono text-xs bg-gray-50/30 border-gray-100 focus-visible:ring-0 resize-none"
+                    value={filteredProducts
+                      .map(p => p.sku)
+                      .filter(sku => sku && sku !== "N/A")
+                      .join(",")}
+                  />
+                </div>
 
-                  <div className="bg-white rounded border border-gray-200 shadow-sm p-4 flex flex-col gap-6 min-w-[240px]">
+                <div className="flex flex-col md:flex-row gap-6 mt-8">
+                  {/* Filter Sidebar */}
+                  <div className="bg-white rounded border border-gray-200 shadow-sm p-4 flex flex-col gap-6 w-full md:w-[260px] h-fit md:sticky md:top-4 overflow-y-auto max-h-[calc(100vh-100px)]">
                     {/* Rating Filter */}
                     <div className="space-y-3">
                       <h3 className="text-sm font-semibold text-gray-900 border-b pb-1">Rating</h3>
                       <div className="flex flex-col gap-2">
                         {[
                           { label: "All products", value: "all" },
-                          { label: "4 stars & up", value: "4" },
-                          { label: "3 stars & up", value: "3" },
-                          { label: "2 stars & up", value: "2" },
-                          { label: "1 star & up", value: "1" },
+                          { label: "", value: "5" },
+                          { label: "", value: "4" },
+                          { label: "", value: "3" },
+                          { label: "", value: "2" },
+                          { label: "", value: "1" },
                           { label: "No rating", value: "none" },
                         ].map((option) => (
                           <label key={option.value} className="flex items-center gap-2 cursor-pointer group">
@@ -372,12 +374,12 @@ const Index = () => {
                             />
                             <span className="text-sm text-gray-700 group-hover:text-gray-900 flex items-center gap-1">
                               {option.label}
-                              {option.value !== "all" && option.value !== "none" && (
+                              {option.label === "" && option.value !== "all" && (
                                 <div className="flex">
                                   {[...Array(5)].map((_, i) => (
                                     <Star
                                       key={i}
-                                      className={`w-3 h-3 ${i < parseInt(option.value) ? "fill-orange-400 text-orange-400" : "text-gray-300"}`}
+                                      className={`w-4 h-4 ${i < parseInt(option.value) ? "fill-orange-400 text-orange-400" : "text-gray-100"}`}
                                     />
                                   ))}
                                 </div>
@@ -453,17 +455,19 @@ const Index = () => {
                       </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {filteredProducts
-                    .map((product, index) => (
-                      <ProductCard
-                        key={`${product.sku}-${index}`}
-                        product={product}
-                        onDelete={() => handleDelete(product.sku)}
-                      />
-                    ))}
+                  {/* Product Cards Grid */}
+                  <div className="flex-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                      {filteredProducts.map((product, index) => (
+                        <ProductCard
+                          key={`${product.sku}-${index}`}
+                          product={product}
+                          onDelete={() => handleDelete(product.sku)}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </>
             )}
