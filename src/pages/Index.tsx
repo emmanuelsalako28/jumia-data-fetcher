@@ -5,7 +5,7 @@ import { ProductTable } from "@/components/ProductTable";
 import { ProductBrief } from "@/types/product";
 import { generateBrief, downloadCSV, fetchProductByUrl, fetchProductData } from "@/utils/productFetcher";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, AlertCircle, FileSpreadsheet, Link as LinkIcon, Copy, Shuffle } from "lucide-react";
+import { Download, Loader2, AlertCircle, FileSpreadsheet, Link as LinkIcon, Copy, Shuffle, Star } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,6 +21,8 @@ const Index = () => {
   const [hasError, setHasError] = useState(false);
   const [filterOutOfStock, setFilterOutOfStock] = useState(false);
   const [filterLive, setFilterLive] = useState(false);
+  const [ratingFilter, setRatingFilter] = useState("all");
+  const [discountFilter, setDiscountFilter] = useState("all");
 
   const handleFetch = async () => {
     const skus = skuInput
@@ -174,6 +176,40 @@ const Index = () => {
     toast.success("Products shuffled!");
   };
 
+  const getFilteredProducts = () => {
+    return products.filter((p) => {
+      // Stock filters
+      if (filterOutOfStock && !p.outOfStock) return false;
+      if (filterLive && p.outOfStock) return false;
+
+      // Rating filter
+      if (ratingFilter !== "all") {
+        if (ratingFilter === "none") {
+          if (p.rating !== undefined && p.rating !== null) return false;
+        } else {
+          const minRating = parseFloat(ratingFilter);
+          if (p.rating === undefined || p.rating === null || p.rating < minRating) return false;
+        }
+      }
+
+      // Discount filter
+      if (discountFilter !== "all") {
+        if (discountFilter === "none") {
+          if (p.discount) return false;
+        } else {
+          const minDiscount = parseInt(discountFilter);
+          if (!p.discount) return false;
+          const currentDiscount = parseInt(p.discount.replace(/[^0-9]/g, ""));
+          if (currentDiscount < minDiscount) return false;
+        }
+      }
+
+      return true;
+    });
+  };
+
+  const filteredProducts = getFilteredProducts();
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -290,7 +326,7 @@ const Index = () => {
                           size="sm"
                           className="h-8 px-3 border border-gray-100 bg-gray-50/50 hover:bg-gray-100"
                           onClick={() => {
-                            const skuList = products
+                            const skuList = filteredProducts
                               .map(p => p.sku)
                               .filter(sku => sku && sku !== "N/A")
                               .join(",");
@@ -306,60 +342,121 @@ const Index = () => {
                     <Textarea
                       readOnly
                       className="min-h-[80px] font-mono text-xs bg-gray-50/30 border-gray-100 focus-visible:ring-0 resize-none"
-                      value={products
+                      value={filteredProducts
                         .map(p => p.sku)
                         .filter(sku => sku && sku !== "N/A")
                         .join(",")}
                     />
                   </div>
 
-                  <div className="bg-white rounded border border-gray-200 shadow-sm p-4 flex flex-col gap-4 min-w-[200px]">
-                    <h3 className="text-md font-medium text-gray-700">Filters</h3>
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id="out-of-stock-filter"
-                          className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                          checked={filterOutOfStock}
-                          onChange={(e) => {
-                            setFilterOutOfStock(e.target.checked);
-                            if (e.target.checked) setFilterLive(false);
-                          }}
-                        />
-                        <label htmlFor="out-of-stock-filter" className="text-sm font-medium text-gray-700 cursor-pointer flex justify-between w-full">
-                          <span>Out of stock only</span>
-                          <span className="text-xs text-muted-foreground mr-2">({products.filter(p => p.outOfStock).length})</span>
-                        </label>
+                  <div className="bg-white rounded border border-gray-200 shadow-sm p-4 flex flex-col gap-6 min-w-[240px]">
+                    {/* Rating Filter */}
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold text-gray-900 border-b pb-1">Rating</h3>
+                      <div className="flex flex-col gap-2">
+                        {[
+                          { label: "All products", value: "all" },
+                          { label: "4 stars & up", value: "4" },
+                          { label: "3 stars & up", value: "3" },
+                          { label: "2 stars & up", value: "2" },
+                          { label: "1 star & up", value: "1" },
+                          { label: "No rating", value: "none" },
+                        ].map((option) => (
+                          <label key={option.value} className="flex items-center gap-2 cursor-pointer group">
+                            <input
+                              type="radio"
+                              name="rating"
+                              className="w-4 h-4 text-orange-600 focus:ring-orange-500 border-gray-300"
+                              checked={ratingFilter === option.value}
+                              onChange={() => setRatingFilter(option.value)}
+                            />
+                            <span className="text-sm text-gray-700 group-hover:text-gray-900 flex items-center gap-1">
+                              {option.label}
+                              {option.value !== "all" && option.value !== "none" && (
+                                <div className="flex">
+                                  {[...Array(5)].map((_, i) => (
+                                    <Star
+                                      key={i}
+                                      className={`w-3 h-3 ${i < parseInt(option.value) ? "fill-orange-400 text-orange-400" : "text-gray-300"}`}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                            </span>
+                          </label>
+                        ))}
                       </div>
+                    </div>
 
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id="live-filter"
-                          className="rounded border-gray-300 text-orange-600 focus:ring-orange-500"
-                          checked={filterLive}
-                          onChange={(e) => {
-                            setFilterLive(e.target.checked);
-                            if (e.target.checked) setFilterOutOfStock(false);
-                          }}
-                        />
-                        <label htmlFor="live-filter" className="text-sm font-medium text-gray-700 cursor-pointer flex justify-between w-full">
-                          <span>Live only</span>
-                          <span className="text-xs text-muted-foreground mr-2">({products.filter(p => !p.outOfStock).length})</span>
+                    {/* Shipping Filter */}
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold text-gray-900 border-b pb-1">Express Delivery</h3>
+                      <div className="flex flex-col gap-2">
+                        <label className="flex items-center gap-2 cursor-pointer group">
+                          <input
+                            type="checkbox"
+                            className="w-4 h-4 rounded text-orange-600 focus:ring-orange-500 border-gray-300"
+                            checked={filterLive}
+                            onChange={(e) => {
+                              setFilterLive(e.target.checked);
+                              if (e.target.checked) setFilterOutOfStock(false);
+                            }}
+                          />
+                          <span className="text-sm text-gray-700 group-hover:text-gray-900 flex items-center justify-between w-full">
+                            <span>Live only</span>
+                            <span className="text-xs text-muted-foreground mr-2">({products.filter(p => !p.outOfStock).length})</span>
+                          </span>
                         </label>
+                        <div className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id="out-of-stock-filter"
+                            className="w-4 h-4 rounded text-red-600 focus:ring-red-500 border-gray-300"
+                            checked={filterOutOfStock}
+                            onChange={(e) => {
+                              setFilterOutOfStock(e.target.checked);
+                              if (e.target.checked) setFilterLive(false);
+                            }}
+                          />
+                          <label htmlFor="out-of-stock-filter" className="text-sm font-medium text-gray-700 cursor-pointer flex justify-between w-full">
+                            <span>Out of stock only</span>
+                            <span className="text-xs text-muted-foreground mr-2">({products.filter(p => p.outOfStock).length})</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Discount Filter */}
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold text-gray-900 border-b pb-1">Discount Percentage</h3>
+                      <div className="flex flex-col gap-2">
+                        {[
+                          { label: "All products", value: "all" },
+                          { label: "50% or more", value: "50" },
+                          { label: "40% or more", value: "40" },
+                          { label: "30% or more", value: "30" },
+                          { label: "20% or more", value: "20" },
+                          { label: "10% or more", value: "10" },
+                          { label: "No discount", value: "none" },
+                        ].map((option) => (
+                          <label key={option.value} className="flex items-center gap-2 cursor-pointer group">
+                            <input
+                              type="radio"
+                              name="discount"
+                              className="w-4 h-4 text-orange-600 focus:ring-orange-500 border-gray-300"
+                              checked={discountFilter === option.value}
+                              onChange={() => setDiscountFilter(option.value)}
+                            />
+                            <span className="text-sm text-gray-700 group-hover:text-gray-900">{option.label}</span>
+                          </label>
+                        ))}
                       </div>
                     </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {products
-                    .filter(p => {
-                      if (filterOutOfStock) return p.outOfStock;
-                      if (filterLive) return !p.outOfStock;
-                      return true;
-                    })
+                  {filteredProducts
                     .map((product, index) => (
                       <ProductCard
                         key={`${product.sku}-${index}`}
