@@ -46,12 +46,13 @@ export function ProductCard({ product, onDelete }: ProductCardProps) {
             </div>
 
             <CardContent className="p-3 space-y-2">
-                {/* Tags */}
-                <div className="flex gap-1 flex-wrap">
+                {/* Tags & SKU */}
+                <div className="flex gap-1 flex-wrap items-center">
                     {product.isOfficialStore && <span className="text-[10px] bg-sky-700 text-white px-1 py-0.5 rounded-sm">Official Store</span>}
                     {product.category && (
                         <span className="text-[10px] bg-slate-800 text-white px-1 py-0.5 rounded-sm">{product.category}</span>
                     )}
+                    <span className="text-[10px] text-slate-400 font-mono ml-auto">SKU: {product.sku}</span>
                 </div>
 
                 {/* Title */}
