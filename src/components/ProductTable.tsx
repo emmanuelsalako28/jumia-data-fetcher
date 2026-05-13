@@ -18,6 +18,15 @@ export function ProductTable({ products }: ProductTableProps) {
     toast.success("All briefs copied to clipboard!");
   };
 
+  const selectAllLinks = () => {
+    const allLinks = products
+      .map((p) => p.url)
+      .filter((url) => url && url.startsWith("http"))
+      .join("\n");
+    navigator.clipboard.writeText(allLinks);
+    toast.success("All links copied (one per row)!");
+  };
+
   const copyBrief = (brief: string, index: number) => {
     navigator.clipboard.writeText(brief);
     setCopiedIndex(index);
@@ -48,10 +57,16 @@ export function ProductTable({ products }: ProductTableProps) {
         <h2 className="text-lg font-semibold">
           Results ({products.length} product{products.length !== 1 ? "s" : ""})
         </h2>
-        <Button onClick={selectAllBriefs} variant="outline" size="sm">
-          <Copy className="w-4 h-4 mr-2" />
-          Select Briefs
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button onClick={selectAllLinks} variant="outline" size="sm">
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Select Links
+          </Button>
+          <Button onClick={selectAllBriefs} variant="outline" size="sm">
+            <Copy className="w-4 h-4 mr-2" />
+            Select Briefs
+          </Button>
+        </div>
       </div>
 
       <div className="overflow-x-auto border rounded-lg bg-card">
