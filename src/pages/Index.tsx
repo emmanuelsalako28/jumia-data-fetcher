@@ -305,47 +305,83 @@ const Index = () => {
             ) : (
               <>
                 {/* Comma-separated format section at top */}
-                <div className="bg-white rounded border border-gray-200 shadow-sm p-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-md font-medium text-gray-700">
-                      Comma-separated format
-                    </h3>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 px-3 border border-gray-100 bg-gray-50/50 hover:bg-gray-100"
-                        onClick={handleShuffle}
-                      >
-                        <Shuffle className="w-3.5 h-3.5 mr-2" />
-                        Shuffle
-                      </Button>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Comma-separated format section */}
+                  <div className="bg-white rounded border border-gray-200 shadow-sm p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-md font-medium text-gray-700">
+                        Comma-separated SKUs
+                      </h3>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-3 border border-gray-100 bg-gray-50/50 hover:bg-gray-100"
+                          onClick={handleShuffle}
+                        >
+                          <Shuffle className="w-3.5 h-3.5 mr-2" />
+                          Shuffle
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-3 border border-gray-100 bg-gray-50/50 hover:bg-gray-100"
+                          onClick={() => {
+                            const skuList = filteredProducts
+                              .map(p => p.sku)
+                              .filter(sku => sku && sku !== "N/A")
+                              .join(",");
+                            navigator.clipboard.writeText(skuList);
+                            toast.success("Comma-separated SKUs copied!");
+                          }}
+                        >
+                          <Copy className="w-3.5 h-3.5 mr-2" />
+                          Copy
+                        </Button>
+                      </div>
+                    </div>
+                    <Textarea
+                      readOnly
+                      className="min-h-[80px] font-mono text-xs bg-gray-50/30 border-gray-100 focus-visible:ring-0 resize-none"
+                      value={filteredProducts
+                        .map(p => p.sku)
+                        .filter(sku => sku && sku !== "N/A")
+                        .join(",")}
+                    />
+                  </div>
+
+                  {/* Product Links section */}
+                  <div className="bg-white rounded border border-gray-200 shadow-sm p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-md font-medium text-gray-700">
+                        Product Links (Row format)
+                      </h3>
                       <Button
                         variant="ghost"
                         size="sm"
                         className="h-8 px-3 border border-gray-100 bg-gray-50/50 hover:bg-gray-100"
                         onClick={() => {
-                          const skuList = filteredProducts
-                            .map(p => p.sku)
-                            .filter(sku => sku && sku !== "N/A")
-                            .join(",");
-                          navigator.clipboard.writeText(skuList);
-                          toast.success("Comma-separated SKUs copied!");
+                          const linkList = filteredProducts
+                            .map(p => p.url)
+                            .filter(url => url && url.startsWith("http"))
+                            .join("\n");
+                          navigator.clipboard.writeText(linkList);
+                          toast.success("Product links copied!");
                         }}
                       >
                         <Copy className="w-3.5 h-3.5 mr-2" />
-                        Copy
+                        Copy All
                       </Button>
                     </div>
+                    <Textarea
+                      readOnly
+                      className="min-h-[80px] font-mono text-xs bg-gray-50/30 border-gray-100 focus-visible:ring-0 resize-none"
+                      value={filteredProducts
+                        .map(p => p.url)
+                        .filter(url => url && url.startsWith("http"))
+                        .join("\n")}
+                    />
                   </div>
-                  <Textarea
-                    readOnly
-                    className="min-h-[80px] font-mono text-xs bg-gray-50/30 border-gray-100 focus-visible:ring-0 resize-none"
-                    value={filteredProducts
-                      .map(p => p.sku)
-                      .filter(sku => sku && sku !== "N/A")
-                      .join(",")}
-                  />
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-6 mt-8">

@@ -10,6 +10,7 @@ interface ProductTableProps {
 
 export function ProductTable({ products }: ProductTableProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [copiedLinkIndex, setCopiedLinkIndex] = useState<number | null>(null);
 
   const selectAllBriefs = () => {
     const allBriefs = products.map((p) => p.brief).join("\n\n");
@@ -22,6 +23,13 @@ export function ProductTable({ products }: ProductTableProps) {
     setCopiedIndex(index);
     toast.success("Brief copied to clipboard!");
     setTimeout(() => setCopiedIndex(null), 2000);
+  };
+
+  const copyUrl = (url: string, index: number) => {
+    navigator.clipboard.writeText(url);
+    setCopiedLinkIndex(index);
+    toast.success("Product URL copied!");
+    setTimeout(() => setCopiedLinkIndex(null), 2000);
   };
 
   if (products.length === 0) {
@@ -85,15 +93,29 @@ export function ProductTable({ products }: ProductTableProps) {
                 </td>
                 <td className="data-cell">
                   {product.url && (
-                    <a
-                      href={product.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline flex items-center gap-1"
-                    >
-                      <ExternalLink className="w-3 h-3" />
-                      <span className="truncate max-w-[150px]">Link</span>
-                    </a>
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={product.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        <span className="truncate max-w-[100px]">Link</span>
+                      </a>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-6 w-6"
+                        onClick={() => copyUrl(product.url, index)}
+                      >
+                        {copiedLinkIndex === index ? (
+                          <Check className="w-3 h-3 text-success" />
+                        ) : (
+                          <Copy className="w-3 h-3" />
+                        )}
+                      </Button>
+                    </div>
                   )}
                 </td>
                 <td className="data-cell text-muted-foreground">
