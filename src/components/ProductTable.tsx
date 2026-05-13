@@ -18,13 +18,24 @@ export function ProductTable({ products }: ProductTableProps) {
     toast.success("All briefs copied to clipboard!");
   };
 
-  const selectAllLinks = () => {
-    const allLinks = products
-      .map((p) => p.url)
-      .filter((url) => url && url.startsWith("http"))
-      .join("\n");
-    navigator.clipboard.writeText(allLinks);
-    toast.success("All links copied (one per row)!");
+  const selectAllRows = () => {
+    // Create header row
+    const headers = ["S/N", "SKU", "Name", "Image", "URL", "Old Price", "New Price"];
+    
+    // Create data rows
+    const rows = products.map((p) => [
+      p.sn,
+      p.sku,
+      p.name,
+      p.image,
+      p.url,
+      p.oldPrice || "",
+      p.newPrice || ""
+    ].join("\t")); // Join columns with tabs
+
+    const content = [headers.join("\t"), ...rows].join("\n");
+    navigator.clipboard.writeText(content);
+    toast.success("All rows copied to clipboard (Tab-separated)!");
   };
 
   const copyBrief = (brief: string, index: number) => {
@@ -58,9 +69,9 @@ export function ProductTable({ products }: ProductTableProps) {
           Results ({products.length} product{products.length !== 1 ? "s" : ""})
         </h2>
         <div className="flex items-center gap-2">
-          <Button onClick={selectAllLinks} variant="outline" size="sm">
-            <ExternalLink className="w-4 h-4 mr-2" />
-            Select Links
+          <Button onClick={selectAllRows} variant="outline" size="sm">
+            <Copy className="w-4 h-4 mr-2" />
+            Select Rows
           </Button>
           <Button onClick={selectAllBriefs} variant="outline" size="sm">
             <Copy className="w-4 h-4 mr-2" />
