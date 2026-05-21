@@ -45,8 +45,8 @@ export function parseProductFromHtml(
       for (let i = 0; i < limit; i++) {
         const item = parsed.products[i];
         const isOutOfStock = item.isSim ? false : (
-          item.quantity === 0 ||
           item.isOutOfStock === true ||
+          item.outOfStock === true ||
           !item.displayName ||
           !item.image ||
           !item.prices?.price ||
@@ -93,8 +93,8 @@ export function parseProductFromHtml(
     else if (parsed.product) {
       const item = parsed.product;
       const isOutOfStock = item.isSim ? false : (
-        item.quantity === 0 ||
         item.isOutOfStock === true ||
+        item.outOfStock === true ||
         !item.displayName ||
         !item.image ||
         !item.prices?.price ||

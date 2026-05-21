@@ -188,7 +188,7 @@ const Index = () => {
           if (p.rating !== undefined && p.rating !== null) return false;
         } else {
           const targetRating = parseFloat(ratingFilter);
-          if (p.rating === undefined || p.rating === null || Math.floor(p.rating) !== targetRating) return false;
+          if (p.rating === undefined || p.rating === null || p.rating < targetRating) return false;
         }
       }
 
