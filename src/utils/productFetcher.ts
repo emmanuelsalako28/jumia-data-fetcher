@@ -117,12 +117,74 @@ function extractStoreJson(html: string): any | null {
   return null;
 }
 
+function extractSellerName(item: any, rootStore: any, html?: string): string | undefined {
+  let name: string | undefined = undefined;
+
+  // 1. Check item & root store properties
+  if (typeof item?.seller === "string") name = item.seller;
+  else if (typeof item?.seller?.name === "string") name = item.seller.name;
+  else if (typeof item?.seller?.displayName === "string") name = item.seller.displayName;
+  else if (typeof item?.sellerEntity?.name === "string") name = item.sellerEntity.name;
+  else if (typeof item?.sellerName === "string") name = item.sellerName;
+  else if (typeof item?.sellerInformation?.name === "string") name = item.sellerInformation.name;
+  else if (typeof rootStore?.seller?.name === "string") name = rootStore.seller.name;
+  else if (typeof rootStore?.seller === "string") name = rootStore.seller;
+  else if (typeof rootStore?.product?.seller?.name === "string") name = rootStore.product.seller.name;
+  else if (typeof rootStore?.product?.seller === "string") name = rootStore.product.seller;
+
+  // 2. Check if global flags exist in object
+  const isGlobalFlag =
+    item?.isGlobal === true ||
+    item?.isShippedFromAbroad === true ||
+    rootStore?.product?.isGlobal === true ||
+    rootStore?.product?.isShippedFromAbroad === true ||
+    (Array.isArray(item?.badges) && item.badges.some((b: any) => /global|abroad|shipped from/i.test(b.text || "")));
+
+  // 3. Fallback: Parse directly from HTML markup
+  if (!name && html) {
+    const sellerHeaderIdx = html.indexOf("SELLER INFORMATION");
+    if (sellerHeaderIdx !== -1) {
+      const snippet = html.substring(sellerHeaderIdx, sellerHeaderIdx + 1500);
+      const match = snippet.match(/<-?\s*p[^>]*>([^<]+)<\/p>/i) ||
+                    snippet.match(/class=["'][^"']*seller[^"']*["'][^>]*>([^<]+)<\//i) ||
+                    snippet.match(/<-?\s*a[^>]*href=["']\/([^"']*-cod)["']/i);
+      if (match && match[1] && match[1].trim().length > 0 && !match[1].includes("Seller Score")) {
+        name = match[1].trim();
+      }
+    }
+
+    if (!name) {
+      const codMatch = html.match(/>([A-Za-z0-9\s_.\-&]+?-COD)</i) ||
+                       html.match(/"seller"\s*:\s*{"name"\s*:\s*"([^"]+)"/i) ||
+                       html.match(/"sellerName"\s*:\s*"([^"]+)"/i);
+      if (codMatch && codMatch[1]) {
+        name = codMatch[1].trim();
+      }
+    }
+  }
+
+  if (name) {
+    if (isGlobalFlag && !name.toUpperCase().includes("-COD")) {
+      name = `${name}-COD`;
+    }
+    return name;
+  }
+
+  if (isGlobalFlag) {
+    return "Global Seller-COD";
+  }
+
+  return undefined;
+}
+
 /**
  * Fallback parser using schema.org JSON-LD scripts
  */
 function parseJsonLdProduct(html: string, baseUrl: string): Partial<ProductData>[] {
   const products: Partial<ProductData>[] = [];
   const ldJsonRegex = /<script\s+type=["']application\/ld\+json["']>([\s\S]*?)<\/script>/gi;
+  const extractedSeller = extractSellerName(null, null, html);
+
   let match;
   while ((match = ldJsonRegex.exec(html)) !== null) {
     try {
@@ -148,6 +210,7 @@ function parseJsonLdProduct(html: string, baseUrl: string): Partial<ProductData>
             oldPrice: "",
             rating: item.aggregateRating?.ratingValue ? parseFloat(item.aggregateRating.ratingValue) : undefined,
             reviews: item.aggregateRating?.reviewCount ? `(${item.aggregateRating.reviewCount})` : undefined,
+            seller: offer?.seller?.name || extractedSeller || undefined,
             outOfStock: offer?.availability?.includes("OutOfStock") ?? false,
             category: item.category || "",
           });
@@ -174,6 +237,7 @@ function parseMetaProduct(html: string, baseUrl: string): Partial<ProductData>[]
   const url = getMeta("og:url") || getMeta("twitter:url");
   const price = getMeta("product:price:amount") || getMeta("og:price:amount");
   const currency = getMeta("product:price:currency") || getMeta("og:price:currency") || "₦";
+  const extractedSeller = extractSellerName(null, null, html);
 
   if (title || image) {
     return [
@@ -184,6 +248,7 @@ function parseMetaProduct(html: string, baseUrl: string): Partial<ProductData>[]
         url: url ? (url.startsWith("http") ? url : baseUrl + url) : "",
         newPrice: price ? `${currency} ${price}` : "",
         oldPrice: "",
+        seller: extractedSeller || undefined,
         outOfStock: false,
       },
     ];
@@ -245,7 +310,7 @@ export function parseProductFromHtml(
             discount: discount,
             rating: item.rating?.average || undefined,
             reviews: item.rating?.totalRatings ? `(${item.rating.totalRatings})` : undefined,
-            seller: item.seller || undefined,
+            seller: extractSellerName(item, parsed, html),
             isOfficialStore: Array.isArray(item.badges)
               ? item.badges.some((b: any) => b.text?.toLowerCase().includes("official"))
               : undefined,
@@ -298,7 +363,7 @@ export function parseProductFromHtml(
             discount: discount,
             rating: item.rating?.average || undefined,
             reviews: item.rating?.totalRatings ? `(${item.rating.totalRatings})` : undefined,
-            seller: item.seller || undefined,
+            seller: extractSellerName(item, parsed, html),
             isOfficialStore: Array.isArray(item.badges)
               ? item.badges.some((b: any) => b.text?.toLowerCase().includes("official"))
               : undefined,
