@@ -407,18 +407,15 @@ export async function fetchProductByUrl(
 
     if (productDataList.length === 0) return [];
 
-    const urlHasCod = url.toUpperCase().includes("-COD") || url.toUpperCase().includes("COD");
+    const isGlobalPattern = /NAFAMZ|AFAMZ|FAMZ|-AO|_AO|-COD/i.test(url);
 
     return productDataList.map((productData) => {
       let finalSku = productData.sku || "N/A";
       let finalSeller = productData.seller;
 
-      if (urlHasCod || isGlobalSku(finalSeller, finalSku, productData.name, url)) {
-        if (finalSku !== "N/A" && !finalSku.toUpperCase().includes("-COD")) {
-          finalSku = `${finalSku}-COD`;
-        }
-        if (!finalSeller || !finalSeller.toUpperCase().includes("-COD")) {
-          finalSeller = finalSeller ? `${finalSeller}-COD` : "Global Seller-COD";
+      if (isGlobalPattern || (finalSku && /NAFAMZ|AFAMZ|FAMZ|-AO|_AO|-COD/i.test(finalSku))) {
+        if (!finalSeller || !finalSeller.trim().toUpperCase().endsWith("-COD")) {
+          finalSeller = finalSeller ? `${finalSeller}-COD` : "Jumia Global Store-COD";
         }
       }
 
@@ -443,11 +440,11 @@ export async function fetchProductByUrl(
     });
   } catch (error) {
     console.error(`Error fetching URL ${url}:`, error);
-    const urlHasCod = url.toUpperCase().includes("-COD");
+    const isGlobalPattern = /NAFAMZ|AFAMZ|FAMZ|-AO|_AO|-COD/i.test(url);
     const product: ProductData = {
       sn: 0,
       sku: "N/A",
-      seller: urlHasCod ? "Global Seller-COD" : undefined,
+      seller: isGlobalPattern ? "Jumia Global Store-COD" : undefined,
       name: "Fetch Failed",
       image: "",
       url: url,
@@ -475,7 +472,7 @@ export async function fetchProductData(
     const sku = rawSku.trim().replace(/^sku:\s*/i, "");
     if (!sku) return null;
 
-    const hasCod = sku.toUpperCase().includes("-COD") || sku.toUpperCase().includes("COD");
+    const isGlobalPattern = /NAFAMZ|AFAMZ|FAMZ|-AO|_AO|-COD/i.test(sku);
 
     try {
       const catalogUrl = `${baseUrl}/catalog/?q=${encodeURIComponent(sku)}`;
@@ -496,16 +493,13 @@ export async function fetchProductData(
 
       const productData = matched || null;
 
-      // Preserve -COD on SKU if input SKU or fetched data contained -COD
       let finalSku = productData?.sku || sku;
-      if (hasCod && !finalSku.toUpperCase().includes("-COD")) {
-        finalSku = sku.toUpperCase().includes("-COD") ? sku : `${finalSku}-COD`;
-      }
-
-      // Preserve -COD on seller if SKU or input has -COD
       let finalSeller = productData?.seller;
-      if (hasCod && (!finalSeller || !finalSeller.toUpperCase().includes("-COD"))) {
-        finalSeller = finalSeller ? `${finalSeller}-COD` : "Global Seller-COD";
+
+      if (isGlobalPattern || (finalSku && /NAFAMZ|AFAMZ|FAMZ|-AO|_AO|-COD/i.test(finalSku))) {
+        if (!finalSeller || !finalSeller.trim().toUpperCase().endsWith("-COD")) {
+          finalSeller = finalSeller ? `${finalSeller}-COD` : "Jumia Global Store-COD";
+        }
       }
 
       const product: ProductData = {
@@ -531,7 +525,7 @@ export async function fetchProductData(
       const product: ProductData = {
         sn: i + 1,
         sku,
-        seller: hasCod ? "Global Seller-COD" : undefined,
+        seller: isGlobalPattern ? "Jumia Global Store-COD" : undefined,
         name: "Fetch Failed",
         image: "",
         url: "",
@@ -561,7 +555,7 @@ export function createMockProducts(skus: string[]): ProductBrief[] {
     .filter((sku) => sku.trim().length > 0)
     .map((rawSku, index) => {
       const cleanSku = rawSku.trim().replace(/^sku:\s*/i, "");
-      const isGlobalMock = index % 2 === 1;
+      const isGlobalMock = /NAFAMZ|AFAMZ|FAMZ|-AO|_AO|-COD/i.test(cleanSku) || index % 2 === 1;
       const product: ProductData = {
         sn: index + 1,
         sku: cleanSku,
