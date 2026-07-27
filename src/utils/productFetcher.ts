@@ -336,11 +336,26 @@ export async function fetchProductByUrl(
 
     if (productDataList.length === 0) return [];
 
+    const urlHasCod = url.toUpperCase().includes("-COD") || url.toUpperCase().includes("COD");
+
     return productDataList.map((productData) => {
+      let finalSku = productData.sku || "N/A";
+      let finalSeller = productData.seller;
+
+      if (urlHasCod || isGlobalSku(finalSeller, finalSku, productData.name, url)) {
+        if (finalSku !== "N/A" && !finalSku.toUpperCase().includes("-COD")) {
+          finalSku = `${finalSku}-COD`;
+        }
+        if (!finalSeller || !finalSeller.toUpperCase().includes("-COD")) {
+          finalSeller = finalSeller ? `${finalSeller}-COD` : "Global Seller-COD";
+        }
+      }
+
       const product: ProductData = {
         ...productData,
         sn: 0, // This will be set by the caller
-        sku: productData.sku || "N/A",
+        sku: finalSku,
+        seller: finalSeller,
         name: productData.name || "Unknown Product",
         image: productData.image || "",
         url: productData.url || url,
@@ -357,9 +372,11 @@ export async function fetchProductByUrl(
     });
   } catch (error) {
     console.error(`Error fetching URL ${url}:`, error);
+    const urlHasCod = url.toUpperCase().includes("-COD");
     const product: ProductData = {
       sn: 0,
       sku: "N/A",
+      seller: urlHasCod ? "Global Seller-COD" : undefined,
       name: "Fetch Failed",
       image: "",
       url: url,
@@ -387,6 +404,8 @@ export async function fetchProductData(
     const sku = rawSku.trim().replace(/^sku:\s*/i, "");
     if (!sku) return null;
 
+    const hasCod = sku.toUpperCase().includes("-COD") || sku.toUpperCase().includes("COD");
+
     try {
       const catalogUrl = `${baseUrl}/catalog/?q=${encodeURIComponent(sku)}`;
       const html = await fetchHtmlWithFallback(catalogUrl);
@@ -406,10 +425,23 @@ export async function fetchProductData(
 
       const productData = matched || null;
 
+      // Preserve -COD on SKU if input SKU or fetched data contained -COD
+      let finalSku = productData?.sku || sku;
+      if (hasCod && !finalSku.toUpperCase().includes("-COD")) {
+        finalSku = sku.toUpperCase().includes("-COD") ? sku : `${finalSku}-COD`;
+      }
+
+      // Preserve -COD on seller if SKU or input has -COD
+      let finalSeller = productData?.seller;
+      if (hasCod && (!finalSeller || !finalSeller.toUpperCase().includes("-COD"))) {
+        finalSeller = finalSeller ? `${finalSeller}-COD` : "Global Seller-COD";
+      }
+
       const product: ProductData = {
         ...productData,
         sn: i + 1,
-        sku: productData?.sku || sku,
+        sku: finalSku,
+        seller: finalSeller,
         name: productData?.name || (productData ? "Unknown Product" : "Fetch Failed"),
         image: productData?.image || "",
         url: productData?.url || "",
@@ -428,6 +460,7 @@ export async function fetchProductData(
       const product: ProductData = {
         sn: i + 1,
         sku,
+        seller: hasCod ? "Global Seller-COD" : undefined,
         name: "Fetch Failed",
         image: "",
         url: "",
@@ -446,31 +479,33 @@ export async function fetchProductData(
   return rawResults.filter((res): res is ProductBrief => res !== null);
 }
 
-export function isGlobalSku(seller?: string, sku?: string): boolean {
-  if (seller) {
-    const cleanSeller = seller.trim().toUpperCase();
-    if (cleanSeller.endsWith("-COD") || cleanSeller.endsWith(" - COD") || cleanSeller.endsWith(" COD") || cleanSeller.includes("-COD")) {
-      return true;
-    }
-  }
-  if (sku) {
-    const cleanSku = sku.trim().toUpperCase();
-    if (cleanSku.endsWith("-COD") || cleanSku.endsWith(" - COD") || cleanSku.endsWith(" COD") || cleanSku.includes("-COD")) {
-      return true;
-    }
-  }
-  return false;
+export function isGlobalSku(seller?: string, sku?: string, name?: string, url?: string): boolean {
+  const check = (val?: string) => {
+    if (!val) return false;
+    const upper = val.toUpperCase().trim();
+    return (
+      upper.includes("-COD") ||
+      upper.includes("_COD") ||
+      upper.endsWith(" - COD") ||
+      upper.endsWith(" COD") ||
+      upper.endsWith("-COD") ||
+      upper.endsWith("COD")
+    );
+  };
+
+  return check(seller) || check(sku) || check(name) || check(url);
 }
 
 export function createMockProducts(skus: string[]): ProductBrief[] {
   return skus
     .filter((sku) => sku.trim().length > 0)
-    .map((sku, index) => {
-      const cleanSku = sku.trim().replace(/^sku:\s*/i, "");
-      const isGlobalMock = index % 2 === 1 || cleanSku.toUpperCase().includes("-COD");
+    .map((rawSku, index) => {
+      const cleanSku = rawSku.trim().replace(/^sku:\s*/i, "");
+      const isGlobalMock = cleanSku.toUpperCase().includes("COD") || cleanSku.toUpperCase().includes("-COD") || index % 2 === 1;
+      const finalSku = isGlobalMock && !cleanSku.toUpperCase().includes("-COD") ? `${cleanSku}-COD` : cleanSku;
       const product: ProductData = {
         sn: index + 1,
-        sku: cleanSku,
+        sku: finalSku,
         name: `Product ${cleanSku}`,
         image: "https://via.placeholder.com/150",
         url: `https://www.jumia.com.ng/catalog/?q=${cleanSku}`,

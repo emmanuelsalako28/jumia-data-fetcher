@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Copy, Check, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { isGlobalSku } from "@/utils/productFetcher";
 
 interface ProductTableProps {
   products: ProductBrief[];
@@ -142,7 +143,16 @@ export function ProductTable({ products, sortOrder = "default", onSortChange }: 
                 }`}
               >
                 <td className="data-cell font-medium">{product.sn}</td>
-                <td className="data-cell font-mono text-xs">{product.sku}</td>
+                <td className="data-cell font-mono text-xs">
+                  <div>{product.sku}</div>
+                  <span className={`inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded mt-0.5 ${
+                    isGlobalSku(product.seller, product.sku, product.name, product.url)
+                      ? "bg-purple-100 text-purple-700 border border-purple-200"
+                      : "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                  }`}>
+                    {isGlobalSku(product.seller, product.sku, product.name, product.url) ? "Global SKU" : "Local SKU"}
+                  </span>
+                </td>
                 <td className="data-cell">{product.name}</td>
                 <td className="data-cell">
                   {product.image && (

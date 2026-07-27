@@ -208,7 +208,7 @@ const Index = () => {
 
       // SKU Classification filter
       if (skuTypeFilter !== "all") {
-        const isGlobal = isGlobalSku(p.seller, p.sku);
+        const isGlobal = isGlobalSku(p.seller, p.sku, p.name, p.url);
         if (skuTypeFilter === "global" && !isGlobal) return false;
         if (skuTypeFilter === "local" && isGlobal) return false;
       }
@@ -584,8 +584,8 @@ const Index = () => {
                                 ({option.value === "all"
                                   ? products.length
                                   : option.value === "global"
-                                    ? products.filter(p => isGlobalSku(p.seller, p.sku)).length
-                                    : products.filter(p => !isGlobalSku(p.seller, p.sku)).length
+                                    ? products.filter(p => isGlobalSku(p.seller, p.sku, p.name, p.url)).length
+                                    : products.filter(p => !isGlobalSku(p.seller, p.sku, p.name, p.url)).length
                                 })
                               </span>
                             </span>
