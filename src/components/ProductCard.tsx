@@ -2,7 +2,8 @@ import { ProductData } from "@/types/product";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trash2, FileText, Star } from "lucide-react";
+import { Trash2, FileText, Star, Globe, MapPin } from "lucide-react";
+import { isGlobalSku } from "@/utils/productFetcher";
 
 interface ProductCardProps {
     product: ProductData;
@@ -10,6 +11,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onDelete }: ProductCardProps) {
+    const isGlobal = isGlobalSku(product.seller, product.sku);
 
     return (
         <Card className="overflow-hidden group hover:shadow-lg transition-shadow duration-300 relative bg-white">
@@ -80,19 +82,35 @@ export function ProductCard({ product, onDelete }: ProductCardProps) {
                     </div>
                 </div>
 
-                {/* Footer: Rating & Express */}
-                <div className="flex justify-between items-center">
-                    {product.rating && (
-                        <div className="flex text-amber-400 text-xs">
-                            {[...Array(5)].map((_, i) => (
-                                <Star key={i} className={`w-3 h-3 ${i < Math.round(product.rating!) ? "fill-current" : "text-slate-200"}`} />
-                            ))}
-                            {product.reviews && <span className="ml-1 text-slate-500">{product.reviews}</span>}
-                        </div>
-                    )}
-                    {product.isExpress && (
-                        <span className="text-[10px] font-bold text-orange-600 italic">JUMIA EXPRESS</span>
-                    )}
+                {/* Footer: Rating, Express & SKU Classification */}
+                <div className="space-y-1.5 pt-1 border-t border-slate-100">
+                    <div className="flex justify-between items-center">
+                        {product.rating ? (
+                            <div className="flex text-amber-400 text-xs items-center">
+                                {[...Array(5)].map((_, i) => (
+                                    <Star key={i} className={`w-3 h-3 ${i < Math.round(product.rating!) ? "fill-current" : "text-slate-200"}`} />
+                                ))}
+                                {product.reviews && <span className="ml-1 text-slate-500">{product.reviews}</span>}
+                            </div>
+                        ) : (
+                            <span className="text-xs text-slate-400 italic">No rating</span>
+                        )}
+                        {product.isExpress && (
+                            <span className="text-[10px] font-bold text-orange-600 italic">JUMIA EXPRESS</span>
+                        )}
+                    </div>
+
+                    {/* SKU Location Classification Badge (Under Rating Stars) */}
+                    <div className="flex items-center">
+                        <span className={`inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
+                            isGlobal
+                                ? "bg-purple-50 text-purple-700 border-purple-200"
+                                : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        }`}>
+                            {isGlobal ? <Globe className="w-3 h-3 text-purple-600" /> : <MapPin className="w-3 h-3 text-emerald-600" />}
+                            {isGlobal ? "Global SKU" : "Local SKU"}
+                        </span>
+                    </div>
                 </div>
 
                 {/* Actions */}

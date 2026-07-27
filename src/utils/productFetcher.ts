@@ -446,11 +446,28 @@ export async function fetchProductData(
   return rawResults.filter((res): res is ProductBrief => res !== null);
 }
 
+export function isGlobalSku(seller?: string, sku?: string): boolean {
+  if (seller) {
+    const cleanSeller = seller.trim().toUpperCase();
+    if (cleanSeller.endsWith("-COD") || cleanSeller.endsWith(" - COD") || cleanSeller.endsWith(" COD") || cleanSeller.includes("-COD")) {
+      return true;
+    }
+  }
+  if (sku) {
+    const cleanSku = sku.trim().toUpperCase();
+    if (cleanSku.endsWith("-COD") || cleanSku.endsWith(" - COD") || cleanSku.endsWith(" COD") || cleanSku.includes("-COD")) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function createMockProducts(skus: string[]): ProductBrief[] {
   return skus
     .filter((sku) => sku.trim().length > 0)
     .map((sku, index) => {
       const cleanSku = sku.trim().replace(/^sku:\s*/i, "");
+      const isGlobalMock = index % 2 === 1 || cleanSku.toUpperCase().includes("-COD");
       const product: ProductData = {
         sn: index + 1,
         sku: cleanSku,
@@ -463,7 +480,7 @@ export function createMockProducts(skus: string[]): ProductBrief[] {
         isOfficialStore: true,
         isExpress: true,
         discount: "-20%",
-        seller: "Jumia Store",
+        seller: isGlobalMock ? "Jumia Global Store-COD" : "Jumia Local Store",
         outOfStock: false,
         category: "Electronics",
       };

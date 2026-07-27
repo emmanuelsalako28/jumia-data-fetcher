@@ -3,7 +3,7 @@ import { CountrySelector } from "@/components/CountrySelector";
 import { SkuInput } from "@/components/SkuInput";
 import { ProductTable } from "@/components/ProductTable";
 import { ProductBrief } from "@/types/product";
-import { generateBrief, downloadCSV, fetchProductByUrl, fetchProductData, parsePriceNumber, parseDiscountNumber, createMockProducts } from "@/utils/productFetcher";
+import { generateBrief, downloadCSV, fetchProductByUrl, fetchProductData, parsePriceNumber, parseDiscountNumber, createMockProducts, isGlobalSku } from "@/utils/productFetcher";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, AlertCircle, FileSpreadsheet, Link as LinkIcon, Copy, Shuffle, Star, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
@@ -23,6 +23,7 @@ const Index = () => {
   const [filterLive, setFilterLive] = useState(false);
   const [ratingFilter, setRatingFilter] = useState("all");
   const [discountFilter, setDiscountFilter] = useState("all");
+  const [skuTypeFilter, setSkuTypeFilter] = useState("all");
   const [sortOrder, setSortOrder] = useState("default");
 
   const handleFetch = async () => {
@@ -203,6 +204,13 @@ const Index = () => {
           const currentDiscount = parseInt(p.discount.replace(/[^0-9]/g, ""));
           if (currentDiscount < minDiscount) return false;
         }
+      }
+
+      // SKU Classification filter
+      if (skuTypeFilter !== "all") {
+        const isGlobal = isGlobalSku(p.seller, p.sku);
+        if (skuTypeFilter === "global" && !isGlobal) return false;
+        if (skuTypeFilter === "local" && isGlobal) return false;
       }
 
       return true;
@@ -548,6 +556,39 @@ const Index = () => {
                               onChange={() => setDiscountFilter(option.value)}
                             />
                             <span className="text-sm text-gray-700 group-hover:text-gray-900">{option.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* SKU Type Filter */}
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold text-gray-900 border-b pb-1">SKU Type</h3>
+                      <div className="flex flex-col gap-2">
+                        {[
+                          { label: "All SKUs", value: "all" },
+                          { label: "Global SKUs (-COD)", value: "global" },
+                          { label: "Local SKUs", value: "local" },
+                        ].map((option) => (
+                          <label key={option.value} className="flex items-center gap-2 cursor-pointer group">
+                            <input
+                              type="radio"
+                              name="skuTypeFilter"
+                              className="w-4 h-4 text-orange-600 focus:ring-orange-500 border-gray-300"
+                              checked={skuTypeFilter === option.value}
+                              onChange={() => setSkuTypeFilter(option.value)}
+                            />
+                            <span className="text-sm text-gray-700 group-hover:text-gray-900 flex items-center justify-between w-full">
+                              <span>{option.label}</span>
+                              <span className="text-xs text-muted-foreground mr-2">
+                                ({option.value === "all"
+                                  ? products.length
+                                  : option.value === "global"
+                                    ? products.filter(p => isGlobalSku(p.seller, p.sku)).length
+                                    : products.filter(p => !isGlobalSku(p.seller, p.sku)).length
+                                })
+                              </span>
+                            </span>
                           </label>
                         ))}
                       </div>
