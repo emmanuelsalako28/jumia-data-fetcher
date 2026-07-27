@@ -117,30 +117,47 @@ function extractStoreJson(html: string): any | null {
   return null;
 }
 
+function isValidSellerName(str: any): str is string {
+  if (typeof str !== "string") return false;
+  const trimmed = str.trim();
+  if (trimmed.length === 0) return false;
+  // If it's a pure numeric string (like "10429" or "98123"), it's a seller ID, NOT a seller name
+  if (/^\d+$/.test(trimmed)) return false;
+  return true;
+}
+
 function extractSellerName(item: any, rootStore: any, html?: string): string | undefined {
   let name: string | undefined = undefined;
 
-  // 1. Check item & root store properties
-  if (typeof item?.seller === "string") name = item.seller;
-  else if (typeof item?.seller?.name === "string") name = item.seller.name;
-  else if (typeof item?.seller?.displayName === "string") name = item.seller.displayName;
-  else if (typeof item?.sellerEntity?.name === "string") name = item.sellerEntity.name;
-  else if (typeof item?.sellerName === "string") name = item.sellerName;
-  else if (typeof item?.sellerInformation?.name === "string") name = item.sellerInformation.name;
-  else if (typeof rootStore?.seller?.name === "string") name = rootStore.seller.name;
-  else if (typeof rootStore?.seller === "string") name = rootStore.seller;
-  else if (typeof rootStore?.product?.seller?.name === "string") name = rootStore.product.seller.name;
-  else if (typeof rootStore?.product?.seller === "string") name = rootStore.product.seller;
+  const checkCandidate = (val: any) => {
+    if (isValidSellerName(val)) return val.trim();
+    if (typeof val === "object" && val !== null) {
+      if (isValidSellerName(val.name)) return val.name.trim();
+      if (isValidSellerName(val.displayName)) return val.displayName.trim();
+    }
+    return undefined;
+  };
 
-  // 2. Check if global flags exist in object
-  const isGlobalFlag =
-    item?.isGlobal === true ||
-    item?.isShippedFromAbroad === true ||
-    rootStore?.product?.isGlobal === true ||
-    rootStore?.product?.isShippedFromAbroad === true ||
-    (Array.isArray(item?.badges) && item.badges.some((b: any) => /global|abroad|shipped from/i.test(b.text || "")));
+  // 1. Direct object or string properties on item
+  name = checkCandidate(item?.seller) ||
+         checkCandidate(item?.sellerName) ||
+         checkCandidate(item?.sellerEntity) ||
+         checkCandidate(item?.sellerInformation);
 
-  // 3. Fallback: Parse directly from HTML markup
+  // 2. Lookup seller by numeric ID in rootStore dictionary
+  if (!name && item?.seller && rootStore?.sellers) {
+    const sellerObj = rootStore.sellers[item.seller] || rootStore.sellers[String(item.seller)];
+    name = checkCandidate(sellerObj);
+  }
+
+  // 3. Root store product / seller properties
+  if (!name) {
+    name = checkCandidate(rootStore?.seller) ||
+           checkCandidate(rootStore?.product?.seller) ||
+           checkCandidate(rootStore?.product?.sellerInformation);
+  }
+
+  // 4. Fallback: Parse directly from HTML markup
   if (!name && html) {
     const sellerHeaderIdx = html.indexOf("SELLER INFORMATION");
     if (sellerHeaderIdx !== -1) {
@@ -148,7 +165,7 @@ function extractSellerName(item: any, rootStore: any, html?: string): string | u
       const match = snippet.match(/<-?\s*p[^>]*>([^<]+)<\/p>/i) ||
                     snippet.match(/class=["'][^"']*seller[^"']*["'][^>]*>([^<]+)<\//i) ||
                     snippet.match(/<-?\s*a[^>]*href=["']\/([^"']*-cod)["']/i);
-      if (match && match[1] && match[1].trim().length > 0 && !match[1].includes("Seller Score")) {
+      if (match && match[1] && isValidSellerName(match[1]) && !match[1].includes("Seller Score")) {
         name = match[1].trim();
       }
     }
@@ -157,24 +174,13 @@ function extractSellerName(item: any, rootStore: any, html?: string): string | u
       const codMatch = html.match(/>([A-Za-z0-9\s_.\-&]+?-COD)</i) ||
                        html.match(/"seller"\s*:\s*{"name"\s*:\s*"([^"]+)"/i) ||
                        html.match(/"sellerName"\s*:\s*"([^"]+)"/i);
-      if (codMatch && codMatch[1]) {
+      if (codMatch && codMatch[1] && isValidSellerName(codMatch[1])) {
         name = codMatch[1].trim();
       }
     }
   }
 
-  if (name) {
-    if (isGlobalFlag && !name.toUpperCase().includes("-COD")) {
-      name = `${name}-COD`;
-    }
-    return name;
-  }
-
-  if (isGlobalFlag) {
-    return "Global Seller-COD";
-  }
-
-  return undefined;
+  return name;
 }
 
 /**
