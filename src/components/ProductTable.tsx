@@ -146,11 +146,11 @@ export function ProductTable({ products, sortOrder = "default", onSortChange }: 
                 <td className="data-cell font-mono text-xs">
                   <div>{product.sku}</div>
                   <span className={`inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded mt-0.5 ${
-                    isGlobalSku(product.seller, product.sku)
+                    isGlobalSku(product.seller)
                       ? "bg-purple-100 text-purple-700 border border-purple-200"
                       : "bg-emerald-100 text-emerald-700 border border-emerald-200"
                   }`}>
-                    {isGlobalSku(product.seller, product.sku) ? "Global SKU" : "Local SKU"}
+                    {isGlobalSku(product.seller) ? "Global SKU" : "Local SKU"}
                   </span>
                 </td>
                 <td className="data-cell">{product.name}</td>

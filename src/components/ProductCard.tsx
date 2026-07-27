@@ -11,7 +11,7 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, onDelete }: ProductCardProps) {
-    const isGlobal = isGlobalSku(product.seller, product.sku);
+    const isGlobal = isGlobalSku(product.seller);
 
     return (
         <Card className="overflow-hidden group hover:shadow-lg transition-shadow duration-300 relative bg-white">

@@ -544,15 +544,10 @@ export async function fetchProductData(
   return rawResults.filter((res): res is ProductBrief => res !== null);
 }
 
-export function isGlobalSku(seller?: any, sku?: any): boolean {
-  const checkEndsWithCod = (val?: any) => {
-    if (!val) return false;
-    const str = typeof val === "string" ? val : typeof val === "object" ? (val.name || val.displayName || String(val)) : String(val);
-    const upper = str.trim().toUpperCase();
-    return upper.endsWith("-COD");
-  };
-
-  return checkEndsWithCod(seller) || checkEndsWithCod(sku);
+export function isGlobalSku(seller?: any): boolean {
+  if (!seller) return false;
+  const str = typeof seller === "string" ? seller : typeof seller === "object" ? (seller.name || seller.displayName || String(seller)) : String(seller);
+  return str.trim().toUpperCase().endsWith("-COD");
 }
 
 export function createMockProducts(skus: string[]): ProductBrief[] {
@@ -560,11 +555,10 @@ export function createMockProducts(skus: string[]): ProductBrief[] {
     .filter((sku) => sku.trim().length > 0)
     .map((rawSku, index) => {
       const cleanSku = rawSku.trim().replace(/^sku:\s*/i, "");
-      const isGlobalMock = cleanSku.toUpperCase().includes("COD") || cleanSku.toUpperCase().includes("-COD") || index % 2 === 1;
-      const finalSku = isGlobalMock && !cleanSku.toUpperCase().includes("-COD") ? `${cleanSku}-COD` : cleanSku;
+      const isGlobalMock = index % 2 === 1;
       const product: ProductData = {
         sn: index + 1,
-        sku: finalSku,
+        sku: cleanSku,
         name: `Product ${cleanSku}`,
         image: "https://via.placeholder.com/150",
         url: `https://www.jumia.com.ng/catalog/?q=${cleanSku}`,
@@ -574,7 +568,7 @@ export function createMockProducts(skus: string[]): ProductBrief[] {
         isOfficialStore: true,
         isExpress: true,
         discount: "-20%",
-        seller: isGlobalMock ? "Jumia Global Store-COD" : "Jumia Local Store",
+        seller: isGlobalMock ? "STY store-COD" : "Jumia Local Store",
         outOfStock: false,
         category: "Electronics",
       };
