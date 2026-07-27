@@ -3,9 +3,9 @@ import { CountrySelector } from "@/components/CountrySelector";
 import { SkuInput } from "@/components/SkuInput";
 import { ProductTable } from "@/components/ProductTable";
 import { ProductBrief } from "@/types/product";
-import { generateBrief, downloadCSV, fetchProductByUrl, fetchProductData } from "@/utils/productFetcher";
+import { generateBrief, downloadCSV, fetchProductByUrl, fetchProductData, parsePriceNumber, parseDiscountNumber } from "@/utils/productFetcher";
 import { Button } from "@/components/ui/button";
-import { Download, Loader2, AlertCircle, FileSpreadsheet, Link as LinkIcon, Copy, Shuffle, Star } from "lucide-react";
+import { Download, Loader2, AlertCircle, FileSpreadsheet, Link as LinkIcon, Copy, Shuffle, Star, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,6 +23,7 @@ const Index = () => {
   const [filterLive, setFilterLive] = useState(false);
   const [ratingFilter, setRatingFilter] = useState("all");
   const [discountFilter, setDiscountFilter] = useState("all");
+  const [sortOrder, setSortOrder] = useState("default");
 
   const handleFetch = async () => {
     const skus = skuInput
@@ -177,7 +178,7 @@ const Index = () => {
   };
 
   const getFilteredProducts = () => {
-    return products.filter((p) => {
+    const filtered = products.filter((p) => {
       // Stock filters
       if (filterOutOfStock && !p.outOfStock) return false;
       if (filterLive && p.outOfStock) return false;
@@ -206,6 +207,18 @@ const Index = () => {
 
       return true;
     });
+
+    if (sortOrder === "price-asc") {
+      return [...filtered].sort((a, b) => parsePriceNumber(a.newPrice) - parsePriceNumber(b.newPrice));
+    } else if (sortOrder === "price-desc") {
+      return [...filtered].sort((a, b) => parsePriceNumber(b.newPrice) - parsePriceNumber(a.newPrice));
+    } else if (sortOrder === "rating-desc") {
+      return [...filtered].sort((a, b) => (b.rating || 0) - (a.rating || 0));
+    } else if (sortOrder === "discount-desc") {
+      return [...filtered].sort((a, b) => parseDiscountNumber(b.discount) - parseDiscountNumber(a.discount));
+    }
+
+    return filtered;
   };
 
   const filteredProducts = getFilteredProducts();
@@ -292,7 +305,7 @@ const Index = () => {
 
             {/* Results Table */}
             <div className="bg-card rounded-lg shadow-sm border p-6">
-              <ProductTable products={products} />
+              <ProductTable products={filteredProducts} sortOrder={sortOrder} onSortChange={setSortOrder} />
             </div>
           </TabsContent>
 
@@ -387,6 +400,40 @@ const Index = () => {
                 <div className="flex flex-col md:flex-row gap-6 mt-8">
                   {/* Filter Sidebar */}
                   <div className="bg-white rounded border border-gray-200 shadow-sm p-4 flex flex-col gap-6 w-full md:w-[260px] h-fit md:sticky md:top-4 overflow-y-auto max-h-[calc(100vh-100px)]">
+                    {/* Sort Filter */}
+                    <div className="space-y-3">
+                      <h3 className="text-sm font-semibold text-gray-900 border-b pb-1 flex items-center justify-between">
+                        <span>Sort Products</span>
+                        <ArrowUpDown className="w-3.5 h-3.5 text-orange-500" />
+                      </h3>
+                      <div className="flex flex-col gap-2">
+                        {[
+                          { label: "Default Order", value: "default" },
+                          { label: "Price: Low to High", value: "price-asc" },
+                          { label: "Price: High to Low", value: "price-desc" },
+                          { label: "Highest Rated", value: "rating-desc" },
+                          { label: "Biggest Discount", value: "discount-desc" },
+                        ].map((option) => (
+                          <label key={option.value} className="flex items-center gap-2 cursor-pointer group">
+                            <input
+                              type="radio"
+                              name="sortOrder"
+                              className="w-4 h-4 text-orange-600 focus:ring-orange-500 border-gray-300"
+                              checked={sortOrder === option.value}
+                              onChange={() => setSortOrder(option.value)}
+                            />
+                            <span
+                              className={`text-sm ${
+                                sortOrder === option.value ? "font-semibold text-orange-600" : "text-gray-700 group-hover:text-gray-900"
+                              }`}
+                            >
+                              {option.label}
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
                     {/* Rating Filter */}
                     <div className="space-y-3">
                       <h3 className="text-sm font-semibold text-gray-900 border-b pb-1">Rating</h3>
@@ -494,6 +541,37 @@ const Index = () => {
 
                   {/* Product Cards Grid */}
                   <div className="flex-1">
+                    {/* Quick Sort Header */}
+                    <div className="flex flex-wrap items-center justify-between gap-3 mb-4 p-3 bg-white rounded border border-gray-200 shadow-sm">
+                      <div className="text-sm font-medium text-gray-600">
+                        Showing <span className="font-bold text-gray-900">{filteredProducts.length}</span> of <span className="font-bold text-gray-900">{products.length}</span> products
+                        {sortOrder === "price-asc" && (
+                          <span className="ml-2 text-xs bg-orange-100 text-orange-700 font-semibold px-2 py-0.5 rounded-full">
+                            Price: Low to High
+                          </span>
+                        )}
+                        {sortOrder === "price-desc" && (
+                          <span className="ml-2 text-xs bg-orange-100 text-orange-700 font-semibold px-2 py-0.5 rounded-full">
+                            Price: High to Low
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground font-medium">Sort by:</span>
+                        <select
+                          value={sortOrder}
+                          onChange={(e) => setSortOrder(e.target.value)}
+                          className="bg-gray-50 border text-xs font-semibold rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-orange-500 cursor-pointer"
+                        >
+                          <option value="default">Default Order</option>
+                          <option value="price-asc">Price: Low to High</option>
+                          <option value="price-desc">Price: High to Low</option>
+                          <option value="rating-desc">Highest Rated</option>
+                          <option value="discount-desc">Biggest Discount</option>
+                        </select>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                       {filteredProducts.map((product, index) => (
                         <ProductCard

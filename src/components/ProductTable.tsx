@@ -1,14 +1,16 @@
 import { ProductBrief } from "@/types/product";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, ExternalLink } from "lucide-react";
+import { Copy, Check, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
 interface ProductTableProps {
   products: ProductBrief[];
+  sortOrder?: string;
+  onSortChange?: (sort: string) => void;
 }
 
-export function ProductTable({ products }: ProductTableProps) {
+export function ProductTable({ products, sortOrder = "default", onSortChange }: ProductTableProps) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [copiedLinkIndex, setCopiedLinkIndex] = useState<number | null>(null);
 
@@ -64,11 +66,28 @@ export function ProductTable({ products }: ProductTableProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-lg font-semibold">
           Results ({products.length} product{products.length !== 1 ? "s" : ""})
         </h2>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {onSortChange && (
+            <div className="flex items-center gap-1.5 text-sm bg-background border rounded-md px-2.5 py-1.5 shadow-sm">
+              <ArrowUpDown className="w-4 h-4 text-orange-600" />
+              <span className="text-xs font-medium text-muted-foreground hidden sm:inline">Sort:</span>
+              <select
+                value={sortOrder}
+                onChange={(e) => onSortChange(e.target.value)}
+                className="bg-transparent text-xs font-semibold focus:outline-none cursor-pointer text-foreground"
+              >
+                <option value="default">Default Order</option>
+                <option value="price-asc">Price: Low to High</option>
+                <option value="price-desc">Price: High to Low</option>
+                <option value="rating-desc">Highest Rated</option>
+                <option value="discount-desc">Biggest Discount</option>
+              </select>
+            </div>
+          )}
           <Button onClick={selectAllRows} variant="outline" size="sm">
             <Copy className="w-4 h-4 mr-2" />
             Select Rows
@@ -90,10 +109,30 @@ export function ProductTable({ products }: ProductTableProps) {
               <th className="data-cell text-left">Image</th>
               <th className="data-cell text-left">URL</th>
               <th className="data-cell text-left">Old Price</th>
-              <th className="data-cell text-left">New Price</th>
+              <th
+                className="data-cell text-left cursor-pointer hover:bg-muted/80 select-none group transition-colors"
+                onClick={() => {
+                  if (onSortChange) {
+                    onSortChange(sortOrder === "price-asc" ? "price-desc" : "price-asc");
+                  }
+                }}
+                title="Click to sort by Price Low to High / High to Low"
+              >
+                <div className="flex items-center gap-1">
+                  <span>New Price</span>
+                  {sortOrder === "price-asc" ? (
+                    <ArrowUp className="w-3.5 h-3.5 text-orange-600" />
+                  ) : sortOrder === "price-desc" ? (
+                    <ArrowDown className="w-3.5 h-3.5 text-orange-600" />
+                  ) : (
+                    <ArrowUpDown className="w-3.5 h-3.5 opacity-40 group-hover:opacity-100 transition-opacity" />
+                  )}
+                </div>
+              </th>
               <th className="data-cell text-left min-w-[300px]">Brief</th>
             </tr>
           </thead>
+
           <tbody>
             {products.map((product, index) => (
               <tr

@@ -330,3 +330,20 @@ export function downloadCSV(products: ProductData[]): void {
   link.click();
   document.body.removeChild(link);
 }
+
+export function parsePriceNumber(priceStr?: string): number {
+  if (!priceStr) return Number.MAX_VALUE;
+  const cleaned = priceStr.replace(/,/g, "").replace(/[^0-9.]/g, "");
+  if (!cleaned) return Number.MAX_VALUE;
+  const val = parseFloat(cleaned);
+  return isNaN(val) ? Number.MAX_VALUE : val;
+}
+
+export function parseDiscountNumber(discountStr?: string): number {
+  if (!discountStr) return 0;
+  const cleaned = discountStr.replace(/[^0-9]/g, "");
+  if (!cleaned) return 0;
+  const val = parseInt(cleaned, 10);
+  return isNaN(val) ? 0 : val;
+}
+
