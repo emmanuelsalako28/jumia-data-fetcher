@@ -3,7 +3,7 @@ import { CountrySelector } from "@/components/CountrySelector";
 import { SkuInput } from "@/components/SkuInput";
 import { ProductTable } from "@/components/ProductTable";
 import { ProductBrief } from "@/types/product";
-import { generateBrief, downloadCSV, fetchProductByUrl, fetchProductData, parsePriceNumber, parseDiscountNumber } from "@/utils/productFetcher";
+import { generateBrief, downloadCSV, fetchProductByUrl, fetchProductData, parsePriceNumber, parseDiscountNumber, createMockProducts } from "@/utils/productFetcher";
 import { Button } from "@/components/ui/button";
 import { Download, Loader2, AlertCircle, FileSpreadsheet, Link as LinkIcon, Copy, Shuffle, Star, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
 import { toast } from "sonner";
@@ -291,13 +291,28 @@ const Index = () => {
               </div>
 
               {hasError && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>CORS Limitation</AlertTitle>
-                  <AlertDescription>
-                    Direct browser requests to Jumia are blocked by CORS. For
-                    full functionality, you'll need a backend proxy server. The
-                    SKUs have been loaded but product data couldn't be fetched.
+                <Alert variant="destructive" className="border-amber-200 bg-amber-50 text-amber-900">
+                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <AlertTitle className="text-amber-800 font-semibold">Fetch Limitation / Warning</AlertTitle>
+                  <AlertDescription className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-amber-700 mt-1">
+                    <span>
+                      Direct requests may be blocked by CORS or network limits. We've added CORS proxies, but if live data is unavailable you can load demo data below.
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const mock = createMockProducts(
+                          skuInput.split("\n").filter((s) => s.trim().length > 0)
+                        );
+                        setProducts(mock);
+                        setHasError(false);
+                        toast.success("Loaded demo product data!");
+                      }}
+                      className="whitespace-nowrap bg-white border-amber-300 hover:bg-amber-100 text-amber-800 font-medium shrink-0"
+                    >
+                      Load Demo Data
+                    </Button>
                   </AlertDescription>
                 </Alert>
               )}
