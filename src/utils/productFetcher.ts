@@ -544,21 +544,15 @@ export async function fetchProductData(
   return rawResults.filter((res): res is ProductBrief => res !== null);
 }
 
-export function isGlobalSku(seller?: string, sku?: string, name?: string, url?: string): boolean {
-  const check = (val?: string) => {
+export function isGlobalSku(seller?: any, sku?: any): boolean {
+  const checkEndsWithCod = (val?: any) => {
     if (!val) return false;
-    const upper = val.toUpperCase().trim();
-    return (
-      upper.includes("-COD") ||
-      upper.includes("_COD") ||
-      upper.endsWith(" - COD") ||
-      upper.endsWith(" COD") ||
-      upper.endsWith("-COD") ||
-      upper.endsWith("COD")
-    );
+    const str = typeof val === "string" ? val : typeof val === "object" ? (val.name || val.displayName || String(val)) : String(val);
+    const upper = str.trim().toUpperCase();
+    return upper.endsWith("-COD");
   };
 
-  return check(seller) || check(sku) || check(name) || check(url);
+  return checkEndsWithCod(seller) || checkEndsWithCod(sku);
 }
 
 export function createMockProducts(skus: string[]): ProductBrief[] {
