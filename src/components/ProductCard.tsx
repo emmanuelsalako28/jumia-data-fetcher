@@ -84,7 +84,7 @@ export function ProductCard({ product, onDelete }: ProductCardProps) {
                 </h3>
 
                 {/* Seller & Location Tag */}
-                {product.seller && (
+                {product.seller ? (
                     <div className="flex items-center gap-2 flex-wrap text-xs">
                         <span className="text-[#f08819] font-semibold">Seller: {product.seller}</span>
                         <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border ${
@@ -93,7 +93,15 @@ export function ProductCard({ product, onDelete }: ProductCardProps) {
                                 : "bg-[#143326] text-[#34d399] border-[#1d5c43]"
                         }`}>
                             {isGlobal ? <Globe className="w-3 h-3 text-purple-400" /> : <Store className="w-3 h-3 text-[#34d399]" />}
-                            {isGlobal ? "LOCAL" : "LOCAL"}
+                            {isGlobal ? "GLOBAL" : "LOCAL"}
+                        </span>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-2 flex-wrap text-xs">
+                        <span className="text-[#f08819] font-semibold">Seller: Jumia Official Store</span>
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-md border bg-[#143326] text-[#34d399] border-[#1d5c43]">
+                            <Store className="w-3 h-3 text-[#34d399]" />
+                            LOCAL
                         </span>
                     </div>
                 )}

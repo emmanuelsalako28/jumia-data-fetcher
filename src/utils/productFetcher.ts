@@ -123,6 +123,7 @@ function isValidSellerName(str: any): str is string {
   if (trimmed.length === 0) return false;
   // If it's a pure numeric string (like "10429" or "98123"), it's a seller ID, NOT a seller name
   if (/^\d+$/.test(trimmed)) return false;
+  if (/^(seller information|seller score|successful delivery|order fulfillment|ratings|reviews|product details)$/i.test(trimmed)) return false;
   return true;
 }
 
@@ -134,6 +135,7 @@ function extractSellerName(item: any, rootStore: any, html?: string): string | u
     if (typeof val === "object" && val !== null) {
       if (isValidSellerName(val.name)) return val.name.trim();
       if (isValidSellerName(val.displayName)) return val.displayName.trim();
+      if (isValidSellerName(val.sellerName)) return val.sellerName.trim();
     }
     return undefined;
   };
@@ -142,40 +144,60 @@ function extractSellerName(item: any, rootStore: any, html?: string): string | u
   name = checkCandidate(item?.seller) ||
          checkCandidate(item?.sellerName) ||
          checkCandidate(item?.sellerEntity) ||
-         checkCandidate(item?.sellerInformation);
+         checkCandidate(item?.sellerInformation) ||
+         checkCandidate(item?.supplierName) ||
+         checkCandidate(item?.brand);
 
-  // 2. Lookup seller by numeric ID in rootStore dictionary
+  // 2. Lookup seller by numeric ID or key in rootStore dictionary
   if (!name && item?.seller && rootStore?.sellers) {
     const sellerObj = rootStore.sellers[item.seller] || rootStore.sellers[String(item.seller)];
     name = checkCandidate(sellerObj);
   }
+  if (!name && item?.sellerId && rootStore?.sellers) {
+    const sellerObj = rootStore.sellers[item.sellerId] || rootStore.sellers[String(item.sellerId)];
+    name = checkCandidate(sellerObj);
+  }
 
   // 3. Root store product / seller properties
-  if (!name) {
+  if (!name && rootStore) {
     name = checkCandidate(rootStore?.seller) ||
            checkCandidate(rootStore?.product?.seller) ||
-           checkCandidate(rootStore?.product?.sellerInformation);
+           checkCandidate(rootStore?.product?.sellerName) ||
+           checkCandidate(rootStore?.product?.sellerInformation) ||
+           checkCandidate(rootStore?.mainSeller);
   }
 
   // 4. Fallback: Parse directly from HTML markup
   if (!name && html) {
-    const sellerHeaderIdx = html.indexOf("SELLER INFORMATION");
-    if (sellerHeaderIdx !== -1) {
-      const snippet = html.substring(sellerHeaderIdx, sellerHeaderIdx + 1500);
-      const match = snippet.match(/<-?\s*p[^>]*>([^<]+)<\/p>/i) ||
-                    snippet.match(/class=["'][^"']*seller[^"']*["'][^>]*>([^<]+)<\//i) ||
-                    snippet.match(/<-?\s*a[^>]*href=["']\/([^"']*-cod)["']/i);
-      if (match && match[1] && isValidSellerName(match[1]) && !match[1].includes("Seller Score")) {
-        name = match[1].trim();
+    // Match JSON strings inside HTML scripts
+    const jsonMatches = [
+      html.match(/"seller"\s*:\s*{\s*"name"\s*:\s*"([^"]+)"/i),
+      html.match(/"sellerName"\s*:\s*"([^"]+)"/i),
+      html.match(/"seller_name"\s*:\s*"([^"]+)"/i),
+      html.match(/"supplierName"\s*:\s*"([^"]+)"/i),
+      html.match(/{"@type":"Organization","name":"([^"]+)"}/i),
+    ];
+    for (const m of jsonMatches) {
+      if (m && m[1] && isValidSellerName(m[1])) {
+        name = m[1].trim();
+        break;
       }
     }
 
+    // Match HTML elements under Seller Information section
     if (!name) {
-      const codMatch = html.match(/>([A-Za-z0-9\s_.\-&]+?-COD)</i) ||
-                       html.match(/"seller"\s*:\s*{"name"\s*:\s*"([^"]+)"/i) ||
-                       html.match(/"sellerName"\s*:\s*"([^"]+)"/i);
-      if (codMatch && codMatch[1] && isValidSellerName(codMatch[1])) {
-        name = codMatch[1].trim();
+      const sellerSectionMatch = html.match(/SELLER INFORMATION[\s\S]*?(?:<p[^>]*>|<a[^>]*>|<div[^>]*class=["'][^"']*name[^"']*["'][^>]*>)\s*([^<]+)\s*<\/(?:p|a|div)>/i);
+      if (sellerSectionMatch && sellerSectionMatch[1] && isValidSellerName(sellerSectionMatch[1])) {
+        name = sellerSectionMatch[1].trim();
+      }
+    }
+
+    // Match generic seller tags in HTML
+    if (!name) {
+      const genericMatch = html.match(/class=["'][^"']*seller-name[^"']*["'][^>]*>([^<]+)<\//i) ||
+                           html.match(/>([A-Za-z0-9\s_.\-&]+?-COD)</i);
+      if (genericMatch && genericMatch[1] && isValidSellerName(genericMatch[1])) {
+        name = genericMatch[1].trim();
       }
     }
   }
