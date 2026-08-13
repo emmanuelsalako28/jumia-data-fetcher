@@ -429,15 +429,16 @@ export async function fetchProductByUrl(
 
     if (productDataList.length === 0) return [];
 
-    const isGlobalPattern = /NAFAMZ|AFAMZ|FAMZ|-AO|_AO|-COD/i.test(url);
+    const isGlobalSkuPattern = /-(?:AO|COD)$|^NAFAMZ-/i.test(url);
 
     return productDataList.map((productData) => {
       let finalSku = productData.sku || "N/A";
+      // Respect the actual extracted seller name directly without mutating it
       let finalSeller = productData.seller;
 
-      if (isGlobalPattern || (finalSku && /NAFAMZ|AFAMZ|FAMZ|-AO|_AO|-COD/i.test(finalSku))) {
-        if (!finalSeller || !finalSeller.trim().toUpperCase().endsWith("-COD")) {
-          finalSeller = finalSeller ? `${finalSeller}-COD` : "Jumia Global Store-COD";
+      if (!finalSeller) {
+        if (isGlobalSkuPattern || /-(?:AO|COD)$|^NAFAMZ-/i.test(finalSku)) {
+          finalSeller = "Jumia Global Store-COD";
         }
       }
 
@@ -462,11 +463,11 @@ export async function fetchProductByUrl(
     });
   } catch (error) {
     console.error(`Error fetching URL ${url}:`, error);
-    const isGlobalPattern = /NAFAMZ|AFAMZ|FAMZ|-AO|_AO|-COD/i.test(url);
+    const isGlobalSkuPattern = /-(?:AO|COD)$|^NAFAMZ-/i.test(url);
     const product: ProductData = {
       sn: 0,
       sku: "N/A",
-      seller: isGlobalPattern ? "Jumia Global Store-COD" : undefined,
+      seller: isGlobalSkuPattern ? "Jumia Global Store-COD" : undefined,
       name: "Fetch Failed",
       image: "",
       url: url,
@@ -494,7 +495,7 @@ export async function fetchProductData(
     const sku = rawSku.trim().replace(/^sku:\s*/i, "");
     if (!sku) return null;
 
-    const isGlobalPattern = /NAFAMZ|AFAMZ|FAMZ|-AO|_AO|-COD/i.test(sku);
+    const isGlobalSkuPattern = /-(?:AO|COD)$|^NAFAMZ-/i.test(sku);
 
     try {
       const catalogUrl = `${baseUrl}/catalog/?q=${encodeURIComponent(sku)}`;
@@ -516,11 +517,12 @@ export async function fetchProductData(
       const productData = matched || null;
 
       let finalSku = productData?.sku || sku;
+      // Respect the actual extracted seller name directly without mutating it
       let finalSeller = productData?.seller;
 
-      if (isGlobalPattern || (finalSku && /NAFAMZ|AFAMZ|FAMZ|-AO|_AO|-COD/i.test(finalSku))) {
-        if (!finalSeller || !finalSeller.trim().toUpperCase().endsWith("-COD")) {
-          finalSeller = finalSeller ? `${finalSeller}-COD` : "Jumia Global Store-COD";
+      if (!finalSeller) {
+        if (isGlobalSkuPattern || /-(?:AO|COD)$|^NAFAMZ-/i.test(finalSku)) {
+          finalSeller = "Jumia Global Store-COD";
         }
       }
 
@@ -547,7 +549,7 @@ export async function fetchProductData(
       const product: ProductData = {
         sn: i + 1,
         sku,
-        seller: isGlobalPattern ? "Jumia Global Store-COD" : undefined,
+        seller: isGlobalSkuPattern ? "Jumia Global Store-COD" : undefined,
         name: "Fetch Failed",
         image: "",
         url: "",
