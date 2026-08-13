@@ -123,7 +123,7 @@ function isValidSellerName(str: any): str is string {
   if (trimmed.length === 0) return false;
   // If it's a pure numeric string (like "10429" or "98123"), it's a seller ID, NOT a seller name
   if (/^\d+$/.test(trimmed)) return false;
-  if (/^(seller information|seller score|successful delivery|order fulfillment|ratings|reviews|product details)$/i.test(trimmed)) return false;
+  if (/^(seller information|seller score|seller performance|shipping speed|quality score|customer rating|cancellation rate|successful delivery|order fulfillment|ratings|reviews|product details|follow|details)$/i.test(trimmed)) return false;
   return true;
 }
 
@@ -140,15 +140,43 @@ function extractSellerName(item: any, rootStore: any, html?: string): string | u
     return undefined;
   };
 
-  // 1. Direct object or string properties on item
-  name = checkCandidate(item?.seller) ||
-         checkCandidate(item?.sellerName) ||
-         checkCandidate(item?.sellerEntity) ||
-         checkCandidate(item?.sellerInformation) ||
-         checkCandidate(item?.supplierName) ||
-         checkCandidate(item?.brand);
+  // 1. Direct HTML markup under "Seller Information" card (The #1 DOM Source of Truth on Jumia product detail page!)
+  if (html) {
+    const sellerHeaderIdx = html.search(/Seller Information/i);
+    if (sellerHeaderIdx !== -1) {
+      const snippet = html.substring(sellerHeaderIdx, sellerHeaderIdx + 1200);
 
-  // 2. Lookup seller by numeric ID or key in rootStore dictionary
+      const patterns = [
+        // Exact Jumia Seller Card structure: <div class="-hr -pam"><p class="-m -pbm">SellerName</p>
+        /<div[^>]*class=["'][^"']*-hr[^"']*["'][^>]*>\s*<p[^>]*class=["'][^"']*-pbm[^"']*["'][^>]*>\s*([^<]+)\s*<\/p>/i,
+        /<p[^>]*class=["'][^"']*-pbm[^"']*["'][^>]*>\s*([^<]+)\s*<\/p>/i,
+        /<div[^>]*class=["'][^"']*-hr[^"']*["'][^>]*>\s*<a[^>]*>\s*([^<]+)\s*<\/a>/i,
+        /<a[^>]*class=["'][^"']*-emu[^"']*["'][^>]*>\s*([^<]+)\s*<\/a>/i,
+        /<h2[^>]*>Seller Information<\/h2>[\s\S]*?<(?:p|a)[^>]*>\s*([^<]+)\s*<\/(?:p|a)>/i,
+        /Seller Information[\s\S]*?<(?:p|a|div)[^>]*>\s*([^<]+)\s*<\/(?:p|a|div)>/i,
+      ];
+
+      for (const pattern of patterns) {
+        const m = snippet.match(pattern);
+        if (m && m[1] && isValidSellerName(m[1])) {
+          name = m[1].trim();
+          break;
+        }
+      }
+    }
+  }
+
+  // 2. Direct object or string properties on item object from store JSON
+  if (!name && item) {
+    name = checkCandidate(item?.seller) ||
+           checkCandidate(item?.sellerName) ||
+           checkCandidate(item?.sellerEntity) ||
+           checkCandidate(item?.sellerInformation) ||
+           checkCandidate(item?.supplierName) ||
+           checkCandidate(item?.brand);
+  }
+
+  // 3. Lookup seller by numeric ID or key in rootStore dictionary
   if (!name && item?.seller && rootStore?.sellers) {
     const sellerObj = rootStore.sellers[item.seller] || rootStore.sellers[String(item.seller)];
     name = checkCandidate(sellerObj);
@@ -158,7 +186,7 @@ function extractSellerName(item: any, rootStore: any, html?: string): string | u
     name = checkCandidate(sellerObj);
   }
 
-  // 3. Root store product / seller properties
+  // 4. Root store product / seller properties
   if (!name && rootStore) {
     name = checkCandidate(rootStore?.seller) ||
            checkCandidate(rootStore?.product?.seller) ||
@@ -167,37 +195,20 @@ function extractSellerName(item: any, rootStore: any, html?: string): string | u
            checkCandidate(rootStore?.mainSeller);
   }
 
-  // 4. Fallback: Parse directly from HTML markup
+  // 5. Fallback: Parse JSON script strings directly from HTML markup
   if (!name && html) {
-    // Match JSON strings inside HTML scripts
     const jsonMatches = [
       html.match(/"seller"\s*:\s*{\s*"name"\s*:\s*"([^"]+)"/i),
       html.match(/"sellerName"\s*:\s*"([^"]+)"/i),
       html.match(/"seller_name"\s*:\s*"([^"]+)"/i),
       html.match(/"supplierName"\s*:\s*"([^"]+)"/i),
       html.match(/{"@type":"Organization","name":"([^"]+)"}/i),
+      html.match(/>([A-Za-z0-9\s_.\-&]+?-COD)</i),
     ];
     for (const m of jsonMatches) {
       if (m && m[1] && isValidSellerName(m[1])) {
         name = m[1].trim();
         break;
-      }
-    }
-
-    // Match HTML elements under Seller Information section
-    if (!name) {
-      const sellerSectionMatch = html.match(/SELLER INFORMATION[\s\S]*?(?:<p[^>]*>|<a[^>]*>|<div[^>]*class=["'][^"']*name[^"']*["'][^>]*>)\s*([^<]+)\s*<\/(?:p|a|div)>/i);
-      if (sellerSectionMatch && sellerSectionMatch[1] && isValidSellerName(sellerSectionMatch[1])) {
-        name = sellerSectionMatch[1].trim();
-      }
-    }
-
-    // Match generic seller tags in HTML
-    if (!name) {
-      const genericMatch = html.match(/class=["'][^"']*seller-name[^"']*["'][^>]*>([^<]+)<\//i) ||
-                           html.match(/>([A-Za-z0-9\s_.\-&]+?-COD)</i);
-      if (genericMatch && genericMatch[1] && isValidSellerName(genericMatch[1])) {
-        name = genericMatch[1].trim();
       }
     }
   }
