@@ -525,7 +525,26 @@ export async function fetchProductData(
         matched = productDataList[0];
       }
 
-      const productData = matched || null;
+      let productData = matched ? { ...matched } : null;
+
+      // If product was found from catalog search but seller name is missing, fetch product detail page directly!
+      if (productData && !productData.seller && productData.url && productData.url.startsWith("http")) {
+        try {
+          const detailHtml = await fetchHtmlWithFallback(productData.url);
+          const detailProducts = parseProductFromHtml(detailHtml, domain);
+          if (detailProducts.length > 0) {
+            const detailObj = detailProducts[0];
+            if (detailObj.seller) {
+              productData.seller = detailObj.seller;
+            }
+            if (detailObj.rating && !productData.rating) productData.rating = detailObj.rating;
+            if (detailObj.reviews && !productData.reviews) productData.reviews = detailObj.reviews;
+            if (detailObj.category && !productData.category) productData.category = detailObj.category;
+          }
+        } catch (detailErr) {
+          console.warn(`Could not fetch detail page for seller extraction on ${productData.url}:`, detailErr);
+        }
+      }
 
       let finalSku = productData?.sku || sku;
       // Respect the actual extracted seller name directly without mutating it
@@ -590,7 +609,7 @@ export function createMockProducts(skus: string[]): ProductBrief[] {
     .filter((sku) => sku.trim().length > 0)
     .map((rawSku, index) => {
       const cleanSku = rawSku.trim().replace(/^sku:\s*/i, "");
-      const isGlobalMock = /NAFAMZ|AFAMZ|FAMZ|-AO|_AO|-COD/i.test(cleanSku) || index % 2 === 1;
+      const isGlobalMock = /-(?:AO|COD)$|^NAFAMZ-/i.test(cleanSku);
       const product: ProductData = {
         sn: index + 1,
         sku: cleanSku,
@@ -603,7 +622,7 @@ export function createMockProducts(skus: string[]): ProductBrief[] {
         isOfficialStore: true,
         isExpress: true,
         discount: "-20%",
-        seller: isGlobalMock ? "STY store-COD" : "Jumia Local Store",
+        seller: isGlobalMock ? "Global Seller-COD" : "Official Jumia Store",
         outOfStock: false,
         category: "Electronics",
       };
