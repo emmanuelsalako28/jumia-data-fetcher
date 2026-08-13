@@ -39,10 +39,12 @@ async function fetchHtmlWithFallback(targetUrl: string): Promise<string> {
     console.warn(`Direct fetch failed for ${targetUrl}, trying CORS proxies...`);
   }
 
-  // 2. CORS Proxy fallbacks
+  // 2. Multi-tier CORS Proxy fallbacks
   const proxyConstructors = [
     (url: string) => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
     (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    (url: string) => `https://thingproxy.freeboard.io/fetch/${url}`,
   ];
 
   for (const getProxyUrl of proxyConstructors) {
