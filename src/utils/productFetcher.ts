@@ -174,8 +174,7 @@ function extractSellerName(item: any, rootStore: any, html?: string): string | u
            checkCandidate(item?.sellerName) ||
            checkCandidate(item?.sellerEntity) ||
            checkCandidate(item?.sellerInformation) ||
-           checkCandidate(item?.supplierName) ||
-           checkCandidate(item?.brand);
+           checkCandidate(item?.supplierName);
   }
 
   // 3. Lookup seller by numeric ID or key in rootStore dictionary
