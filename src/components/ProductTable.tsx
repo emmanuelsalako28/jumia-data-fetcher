@@ -1,6 +1,6 @@
 import { ProductBrief } from "@/types/product";
 import { Button } from "@/components/ui/button";
-import { Copy, Check, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react";
+import { Copy, Check, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Pin } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { isGlobalSku } from "@/utils/productFetcher";
@@ -144,7 +144,10 @@ export function ProductTable({ products, sortOrder = "default", onSortChange }: 
               >
                 <td className="data-cell font-medium">{product.sn}</td>
                 <td className="data-cell font-mono text-xs">
-                  <div>{product.sku}</div>
+                  <div className="flex items-center gap-1 font-extrabold text-[#f08819]">
+                    <Pin className="w-3 h-3 rotate-45 shrink-0 fill-[#f08819]/20" />
+                    <span>{product.sku}</span>
+                  </div>
                   <span className={`inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded mt-0.5 ${
                     isGlobalSku(product.seller)
                       ? "bg-purple-100 text-purple-700 border border-purple-200"
